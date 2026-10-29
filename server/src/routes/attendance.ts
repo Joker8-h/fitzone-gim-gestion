@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { attendanceService } from '../services/attendanceService.js';
+import { auditService } from '../services/auditService.js';
 
 export const attendanceRouter = Router();
 
@@ -7,16 +8,32 @@ export const attendanceRouter = Router();
 attendanceRouter.post('/check-in', (req, res) => {
   try {
     const { documentId, override, overrideReason, registeredBy } = req.body;
-    if (!documentId) {
-      return res.status(400).json({ error: 'El número de documento es obligatorio' });
+    if (!documentId || typeof documentId !== 'string') {
+      return res.status(400).json({ error: 'El número de documento es obligatorio.' });
+    }
+
+    const cleanDoc = documentId.trim();
+    if (cleanDoc.length < 3) {
+      return res.status(400).json({ error: 'Documento inválido.' });
     }
 
     const result = attendanceService.checkIn(
-      documentId,
+      cleanDoc,
       Boolean(override),
       overrideReason,
-      registeredBy
+      registeredBy || 'Recepción'
     );
+
+    // Auditoría si hubo excepción autorizada (RN-008, RNF-006)
+    if (override && result.success) {
+      auditService.log(
+        'OVERRIDE_CHECKIN',
+        'Attendance',
+        result.attendance?.id,
+        `Ingreso excepcional autorizado para documento ${cleanDoc}. Motivo: ${overrideReason || 'Sin motivo especificado'}`,
+        registeredBy || 'Recepción'
+      );
+    }
 
     if (result.blocked) {
       return res.status(403).json(result);

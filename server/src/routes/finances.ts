@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { financeService } from '../services/financeService.js';
+import { auditService } from '../services/auditService.js';
 
 export const financeRouter = Router();
 
@@ -51,14 +52,29 @@ financeRouter.post('/transactions', (req, res) => {
     if (!type || !concept || amount === undefined) {
       return res.status(400).json({ error: 'Tipo, Concepto y Monto son obligatorios' });
     }
+
+    const numericAmount = Number(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      return res.status(400).json({ error: 'El monto debe ser un número superior a 0' });
+    }
+
     const tx = financeService.createTransaction({
       type,
       categoryId,
       concept,
-      amount: Number(amount),
+      amount: numericAmount,
       date,
-      registeredBy,
+      registeredBy: registeredBy || 'Admin',
     });
+
+    auditService.log(
+      'RECORD_TRANSACTION',
+      'FinancialTransaction',
+      tx.id,
+      `${type}: ${concept} por $${numericAmount}`,
+      registeredBy || 'Admin'
+    );
+
     res.status(201).json(tx);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -72,13 +88,28 @@ financeRouter.post('/coach-payment', (req, res) => {
     if (!coachName || !amount || !periodConcept) {
       return res.status(400).json({ error: 'Nombre del entrenador, monto y concepto del periodo son obligatorios' });
     }
+
+    const numericAmount = Number(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      return res.status(400).json({ error: 'El valor a pagar debe ser mayor a 0' });
+    }
+
     const tx = financeService.recordCoachPayment({
       coachName,
-      amount: Number(amount),
+      amount: numericAmount,
       periodConcept,
       date,
-      registeredBy,
+      registeredBy: registeredBy || 'Admin',
     });
+
+    auditService.log(
+      'COACH_PAYMENT',
+      'FinancialTransaction',
+      tx.id,
+      `Pago a Entrenador ${coachName}: $${numericAmount} (${periodConcept})`,
+      registeredBy || 'Admin'
+    );
+
     res.status(201).json(tx);
   } catch (err: any) {
     res.status(400).json({ error: err.message });

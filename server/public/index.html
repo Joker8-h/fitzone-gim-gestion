@@ -14,35 +14,40 @@
         extend: {
           colors: {
             gym: {
-              dark: '#090d16',
-              card: '#0f172a',
+              dark: '#080c14',
+              surface: '#0f172a',
+              card: '#141e33',
               border: '#1e293b',
               accent: '#10b981',
-              danger: '#ef4444',
+              accentHover: '#059669',
+              danger: '#f43f5e',
               warning: '#f59e0b',
-              info: '#3b82f6',
+              info: '#38bdf8',
             }
+          },
+          boxShadow: {
+            'glow-emerald': '0 0 25px -5px rgba(16, 185, 129, 0.25)',
+            'glow-rose': '0 0 25px -5px rgba(244, 63, 94, 0.3)',
           }
         }
       }
     }
   </script>
   <style>
-    @keyframes pulse-ring {
-      0% { transform: scale(0.95); opacity: 0.8; }
-      50% { transform: scale(1.05); opacity: 0.4; }
-      100% { transform: scale(0.95); opacity: 0.8; }
+    @keyframes pulse-soft {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
     }
-    .pulse-glow {
-      animation: pulse-ring 2s infinite ease-in-out;
+    .animate-pulse-soft {
+      animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
-    /* Estilos de scrollbar oscuros */
+    /* Scrollbars delgados y estilizados */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
     }
     ::-webkit-scrollbar-track {
-      background: #090d16;
+      background: #080c14;
     }
     ::-webkit-scrollbar-thumb {
       background: #1e293b;
@@ -51,55 +56,71 @@
     ::-webkit-scrollbar-thumb:hover {
       background: #334155;
     }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
   </style>
 </head>
-<body class="h-full flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
+<body class="h-full flex flex-col font-sans selection:bg-emerald-500 selection:text-white bg-[#080c14]">
+
+  <!-- CONTENEDOR FLOTANTE DE NOTIFICACIONES TOAST -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none"></div>
 
   <!-- TOP HEADER -->
-  <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 px-4 lg:px-8 py-3 flex items-center justify-between">
+  <header class="glass-panel border-b border-slate-800/80 sticky top-0 z-40 px-4 lg:px-8 py-3 flex items-center justify-between shadow-xl">
     <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-        <i data-lucide="dumbbell" class="w-6 h-6"></i>
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-inner">
+        <i data-lucide="dumbbell" class="w-5 h-5"></i>
       </div>
       <div>
-        <h1 class="font-bold text-lg leading-tight flex items-center gap-2">
-          GIM <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Fase 1</span>
+        <h1 class="font-extrabold text-lg leading-tight tracking-tight flex items-center gap-2">
+          GIM <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-wider">Fase 1</span>
         </h1>
         <p class="text-xs text-slate-400">Control Operativo & WhatsApp Bot</p>
       </div>
     </div>
 
-    <!-- NAVEGACIÓN PRINCIPAL -->
-    <nav class="hidden md:flex items-center gap-1 bg-slate-950/70 p-1 rounded-xl border border-slate-800">
-      <button onclick="switchTab('checkin')" id="nav-checkin" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 bg-emerald-600 text-white shadow-lg">
-        <i data-lucide="scan-face" class="w-4 h-4"></i> Asistencia (Mostrador)
+    <!-- NAVEGACIÓN PRINCIPAL ESCRITORIO -->
+    <nav class="hidden md:flex items-center gap-1 bg-slate-950/80 p-1 rounded-2xl border border-slate-800/90 shadow-inner">
+      <button onclick="switchTab('checkin')" id="nav-checkin" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-2 bg-emerald-600 text-white shadow-md shadow-emerald-950">
+        <i data-lucide="scan-face" class="w-4 h-4"></i> Asistencia
       </button>
-      <button onclick="switchTab('clients')" id="nav-clients" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 text-slate-300 hover:text-white hover:bg-slate-800">
+      <button onclick="switchTab('clients')" id="nav-clients" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900">
         <i data-lucide="users" class="w-4 h-4"></i> Clientes
       </button>
-      <button onclick="switchTab('memberships')" id="nav-memberships" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 text-slate-300 hover:text-white hover:bg-slate-800">
-        <i data-lucide="credit-card" class="w-4 h-4"></i> Membresías & Pagos
+      <button onclick="switchTab('memberships')" id="nav-memberships" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900">
+        <i data-lucide="credit-card" class="w-4 h-4"></i> Membresías
       </button>
-      <button onclick="switchTab('finances')" id="nav-finances" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 text-slate-300 hover:text-white hover:bg-slate-800">
+      <button onclick="switchTab('finances')" id="nav-finances" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900">
         <i data-lucide="wallet" class="w-4 h-4"></i> Finanzas
       </button>
-      <button onclick="switchTab('whatsapp')" id="nav-whatsapp" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 text-slate-300 hover:text-white hover:bg-slate-800">
-        <i data-lucide="message-square" class="w-4 h-4"></i> WhatsApp Bot
+      <button onclick="switchTab('whatsapp')" id="nav-whatsapp" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900">
+        <i data-lucide="message-square" class="w-4 h-4"></i> WhatsApp
       </button>
-      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 text-slate-300 hover:text-white hover:bg-slate-800">
+      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900">
         <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Panel
       </button>
     </nav>
 
-    <!-- ESTADO WHATSAPP MINI -->
-    <div id="header-whatsapp-pill" class="flex items-center gap-2 text-xs py-1.5 px-3 rounded-full bg-slate-800 border border-slate-700 text-slate-300 cursor-pointer" onclick="switchTab('whatsapp')">
-      <span id="wa-indicator-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
-      <span id="wa-status-text">WhatsApp: Verificando...</span>
+    <!-- ESTADO WHATSAPP & BOTÓN DE SONIDO -->
+    <div class="flex items-center gap-2">
+      <!-- Botón de Silencio/Audio -->
+      <button id="btn-toggle-sound" onclick="toggleSound()" title="Activar/Silenciar sonido de asistencia" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition">
+        <i data-lucide="volume-2" id="icon-sound" class="w-4 h-4 text-emerald-400"></i>
+      </button>
+
+      <!-- Pill de estado de WhatsApp -->
+      <div id="header-whatsapp-pill" class="flex items-center gap-2 text-xs py-1.5 px-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 cursor-pointer hover:border-slate-700 transition" onclick="switchTab('whatsapp')">
+        <span id="wa-indicator-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+        <span id="wa-status-text" class="font-medium text-[11px]">WhatsApp: Verificando...</span>
+      </div>
     </div>
   </header>
 
   <!-- NAVEGACIÓN MÓVIL (BARRA INFERIOR) -->
-  <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900 border-t border-slate-800 grid grid-cols-6 py-2 px-1 text-center text-[10px]">
+  <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-slate-800 grid grid-cols-6 py-2 px-1 text-center text-[10px]">
     <button onclick="switchTab('checkin')" class="flex flex-col items-center gap-1 text-emerald-400 py-1">
       <i data-lucide="scan-face" class="w-5 h-5"></i><span>Entrada</span>
     </button>
@@ -121,7 +142,7 @@
   </div>
 
   <!-- MAIN VIEW CONTAINER -->
-  <main class="flex-1 overflow-y-auto p-4 md:p-8 max-w-7xl mx-auto w-full pb-20 md:pb-8">
+  <main class="flex-1 overflow-y-auto p-4 md:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8">
 
     <!-- ========================================== -->
     <!-- 1. TAB: MOSTRADOR / REGISTRO DE ASISTENCIA -->
@@ -130,61 +151,63 @@
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         <!-- Marcador principal -->
-        <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8 shadow-xl flex flex-col justify-between">
+        <div class="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute -top-24 -right-24 w-56 h-56 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
           <div>
-            <div class="flex items-center justify-between mb-4">
-              <span class="text-xs uppercase tracking-wider font-semibold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+            <div class="flex items-center justify-between mb-5">
+              <span class="text-[11px] uppercase tracking-wider font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
                 Punto de Acceso & Recepción
               </span>
-              <span id="current-clock" class="text-sm font-mono text-slate-400">--:--:--</span>
+              <span id="current-clock" class="text-sm font-mono text-slate-400 bg-slate-950 px-3 py-1 rounded-xl border border-slate-800">--:--:--</span>
             </div>
             
-            <h2 class="text-2xl md:text-3xl font-extrabold text-white mb-2">Marcaje de Asistencia</h2>
-            <p class="text-slate-400 text-sm mb-6">Ingresa el número de documento del cliente para verificar su estado y dar acceso.</p>
+            <h2 class="text-2xl md:text-3xl font-black text-white mb-2 tracking-tight">Registro de Ingreso</h2>
+            <p class="text-slate-400 text-sm mb-6">Digita o escanea la cédula del cliente para verificar vigencia y autorizar el paso.</p>
 
             <form id="form-checkin" onsubmit="handleCheckIn(event)" class="space-y-4">
               <div class="relative">
                 <input 
                   type="text" 
                   id="checkin-doc" 
-                  placeholder="Número de Cédula / Documento..." 
-                  class="w-full bg-slate-950 border-2 border-slate-700 focus:border-emerald-500 text-white text-xl md:text-2xl font-mono rounded-2xl py-4 px-5 pl-14 outline-none transition placeholder:text-slate-600 shadow-inner"
+                  placeholder="Cédula o Documento..." 
+                  class="w-full bg-slate-950 border-2 border-slate-800 focus:border-emerald-500 text-white text-xl md:text-2xl font-mono rounded-2xl py-4 px-5 pl-14 outline-none transition placeholder:text-slate-600 shadow-inner"
                   autofocus
+                  autocomplete="off"
                   required
                 />
-                <i data-lucide="user-check" class="w-7 h-7 absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                <i data-lucide="id-card" class="w-6 h-6 absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
               </div>
 
               <div class="flex gap-3">
-                <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold py-4 px-6 rounded-2xl transition shadow-lg shadow-emerald-900/30 flex items-center justify-center gap-2 text-lg">
+                <button type="submit" id="btn-submit-checkin" class="flex-1 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold py-4 px-6 rounded-2xl transition shadow-lg shadow-emerald-950 flex items-center justify-center gap-2 text-base md:text-lg">
                   <i data-lucide="check-circle" class="w-6 h-6"></i> Registrar Entrada
                 </button>
-                <button type="button" onclick="openNewClientModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-4 rounded-2xl transition flex items-center gap-2 border border-slate-700">
-                  <i data-lucide="user-plus" class="w-5 h-5"></i> <span class="hidden sm:inline">Nuevo Cliente</span>
+                <button type="button" onclick="openNewClientModal()" class="bg-slate-950 hover:bg-slate-800 text-slate-200 px-5 py-4 rounded-2xl transition flex items-center gap-2 border border-slate-800 font-semibold text-sm">
+                  <i data-lucide="user-plus" class="w-5 h-5 text-emerald-400"></i> <span class="hidden sm:inline">Nuevo</span>
                 </button>
               </div>
             </form>
           </div>
 
           <!-- Banner de Resultado / Alerta Visual en Tiempo Real -->
-          <div id="checkin-feedback" class="mt-8 hidden p-6 rounded-2xl border transition-all duration-300">
-            <!-- Contenido dinámico inyectado por JS -->
-          </div>
+          <div id="checkin-feedback" class="mt-8 hidden p-6 rounded-2xl border transition-all duration-300"></div>
         </div>
 
         <!-- Historial en vivo del día -->
-        <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col">
+        <div class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl flex flex-col">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="font-bold text-lg flex items-center gap-2">
-              <i data-lucide="history" class="w-5 h-5 text-emerald-400"></i> Entradas de Hoy
+            <h3 class="font-bold text-base flex items-center gap-2 text-white">
+              <i data-lucide="history" class="w-4 h-4 text-emerald-400"></i> Entradas de Hoy
             </h3>
-            <span id="today-count-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">
+            <span id="today-count-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-950 text-slate-300 border border-slate-800 font-mono">
               0 entradas
             </span>
           </div>
 
           <div id="today-attendances-list" class="flex-1 overflow-y-auto max-h-[460px] space-y-2.5 pr-1">
-            <p class="text-slate-500 text-sm text-center py-10">Cargando registros...</p>
+            <p class="text-slate-500 text-xs text-center py-10">Cargando registros...</p>
           </div>
         </div>
 
@@ -195,13 +218,13 @@
     <!-- 2. TAB: GESTIÓN DE CLIENTES -->
     <!-- ========================================== -->
     <section id="tab-clients" class="tab-view hidden space-y-6">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
-            <h2 class="text-2xl font-bold">Directorio de Clientes</h2>
-            <p class="text-slate-400 text-sm">Gestiona la información y consulta la ficha de cada miembro.</p>
+            <h2 class="text-2xl font-bold tracking-tight">Directorio de Clientes</h2>
+            <p class="text-slate-400 text-sm">Consulta la ficha, historial y estados de cada socio.</p>
           </div>
-          <button onclick="openNewClientModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-4 rounded-xl transition flex items-center gap-2 self-start md:self-auto shadow-md">
+          <button onclick="openNewClientModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-4 rounded-xl transition flex items-center gap-2 self-start md:self-auto shadow-md shadow-emerald-950 text-sm">
             <i data-lucide="user-plus" class="w-4 h-4"></i> + Registrar Cliente
           </button>
         </div>
@@ -212,13 +235,13 @@
             <input 
               type="text" 
               id="clients-search-input" 
-              placeholder="Buscar por documento, nombre o teléfono..." 
+              placeholder="Buscar por cédula, nombre o WhatsApp..." 
               oninput="filterClients()"
-              class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 pl-10 text-white outline-none focus:border-emerald-500 text-sm"
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 pl-10 text-white outline-none focus:border-emerald-500 text-sm transition"
             />
             <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"></i>
           </div>
-          <select id="clients-filter-status" onchange="filterClients()" class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-300 outline-none focus:border-emerald-500">
+          <select id="clients-filter-status" onchange="filterClients()" class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-300 outline-none focus:border-emerald-500 transition">
             <option value="">Todos los estados</option>
             <option value="ACTIVO">Solo Activos</option>
             <option value="INACTIVO">Solo Inactivos</option>
@@ -226,19 +249,19 @@
         </div>
 
         <!-- Tabla de clientes -->
-        <div class="overflow-x-auto rounded-xl border border-slate-800">
+        <div class="overflow-x-auto rounded-2xl border border-slate-800">
           <table class="w-full text-left text-sm">
-            <thead class="bg-slate-950/80 text-slate-400 border-b border-slate-800 text-xs uppercase tracking-wider">
+            <thead class="bg-slate-950 text-slate-400 border-b border-slate-800 text-xs uppercase tracking-wider">
               <tr>
                 <th class="py-3 px-4">Documento</th>
                 <th class="py-3 px-4">Nombre Completo</th>
-                <th class="py-3 px-4">Teléfono</th>
+                <th class="py-3 px-4">WhatsApp</th>
                 <th class="py-3 px-4">Estado</th>
                 <th class="py-3 px-4">Registro</th>
                 <th class="py-3 px-4 text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody id="clients-table-body" class="divide-y divide-slate-800/60">
+            <tbody id="clients-table-body" class="divide-y divide-slate-800/60 bg-slate-900/50">
               <tr><td colspan="6" class="text-center py-8 text-slate-500">Cargando clientes...</td></tr>
             </tbody>
           </table>
@@ -253,36 +276,36 @@
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         <!-- Formulario de Asignación / Renovación -->
-        <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <div class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl">
           <h2 class="text-xl font-bold mb-1 flex items-center gap-2">
             <i data-lucide="credit-card" class="w-5 h-5 text-emerald-400"></i> Asignar / Renovar Membresía
           </h2>
-          <p class="text-slate-400 text-xs mb-6">Calcula la vigencia automáticamente y alimenta caja en un solo paso.</p>
+          <p class="text-slate-400 text-xs mb-6">Calcula la vigencia acumulada y registra el pago en caja automáticamente.</p>
 
           <form id="form-assign-membership" onsubmit="handleAssignMembership(event)" class="space-y-4 text-sm">
             <div>
-              <label class="block text-slate-300 font-medium mb-1">Seleccionar Cliente</label>
-              <select id="assign-client-select" required onchange="handleSelectClientForPlan()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-emerald-500">
+              <label class="block text-slate-300 font-medium mb-1">Seleccionar Cliente *</label>
+              <select id="assign-client-select" required onchange="handleSelectClientForPlan()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-emerald-500 transition">
                 <option value="">Selecciona un cliente...</option>
               </select>
-              <div id="assign-client-preview" class="mt-2 text-xs text-slate-400 hidden p-2.5 bg-slate-950/60 rounded-lg border border-slate-800"></div>
+              <div id="assign-client-preview" class="mt-2 text-xs text-slate-400 hidden p-2.5 bg-slate-950/60 rounded-xl border border-slate-800"></div>
             </div>
 
             <div>
-              <label class="block text-slate-300 font-medium mb-1">Plan de Membresía</label>
-              <select id="assign-plan-select" required onchange="handlePlanChange()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-emerald-500">
+              <label class="block text-slate-300 font-medium mb-1">Plan de Membresía *</label>
+              <select id="assign-plan-select" required onchange="handlePlanChange()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-emerald-500 transition">
                 <option value="">Selecciona un plan...</option>
               </select>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block text-slate-300 font-medium mb-1">Valor a Cobrar ($)</label>
-                <input type="number" id="assign-amount" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-emerald-500" />
+                <label class="block text-slate-300 font-medium mb-1">Valor a Cobrar ($) *</label>
+                <input type="number" id="assign-amount" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-emerald-500 transition" />
               </div>
               <div>
-                <label class="block text-slate-300 font-medium mb-1">Medio de Pago</label>
-                <select id="assign-payment-method" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500">
+                <label class="block text-slate-300 font-medium mb-1">Medio de Pago *</label>
+                <select id="assign-payment-method" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500 transition">
                   <option value="EFECTIVO">Efectivo</option>
                   <option value="NEQUI">Nequi</option>
                   <option value="DAVIPLATA">Daviplata</option>
@@ -294,29 +317,29 @@
 
             <div>
               <label class="block text-slate-300 font-medium mb-1">Referencia / Comprobante (Opcional)</label>
-              <input type="text" id="assign-reference" placeholder="Ej: Nro de transacción..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500" />
+              <input type="text" id="assign-reference" placeholder="Ej: Nro de transacción..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500 transition" />
             </div>
 
             <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-300">
-              <i data-lucide="info" class="w-4 h-4 inline mr-1"></i>
-              <strong>Regla de negocio:</strong> Si el cliente tiene membresía activa, los días del plan se sumarán al final de su vencimiento actual sin perder días.
+              <i data-lucide="sparkles" class="w-4 h-4 inline mr-1"></i>
+              <strong>Regla DP-002:</strong> Si el socio tiene membresía activa, los días se suman al final de su vencimiento actual sin perder ningún día.
             </div>
 
-            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-900/30 flex items-center justify-center gap-2">
+            <button type="submit" id="btn-submit-membership" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-950 flex items-center justify-center gap-2">
               <i data-lucide="check" class="w-4 h-4"></i> Guardar Pago y Asignar
             </button>
           </form>
         </div>
 
         <!-- Catálogo de Planes Disponibles -->
-        <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <div class="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl">
           <div class="flex items-center justify-between mb-4">
             <div>
-              <h2 class="text-xl font-bold">Catálogo de Planes</h2>
-              <p class="text-slate-400 text-xs">Planes y tarifas activas en el gimnasio</p>
+              <h2 class="text-xl font-bold tracking-tight">Catálogo de Planes</h2>
+              <p class="text-slate-400 text-xs">Tarifas configuradas para los socios</p>
             </div>
-            <button onclick="openNewPlanModal()" class="bg-slate-800 hover:bg-slate-700 text-xs font-semibold py-2 px-3 rounded-lg border border-slate-700 text-slate-200 transition flex items-center gap-1.5">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Nuevo Plan
+            <button onclick="openModal('modal-new-plan')" class="bg-slate-950 hover:bg-slate-800 text-xs font-semibold py-2 px-3 rounded-xl border border-slate-800 text-slate-200 transition flex items-center gap-1.5">
+              <i data-lucide="plus" class="w-3.5 h-3.5 text-emerald-400"></i> Nuevo Plan
             </button>
           </div>
 
@@ -335,28 +358,28 @@
       
       <!-- Resumen KPIs Financieros -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
           <div class="flex items-center justify-between text-xs text-slate-400 uppercase font-semibold mb-2">
             <span>Ingresos Registrados</span>
-            <i data-lucide="trending-up" class="w-4 h-4 text-emerald-400"></i>
+            <div class="p-2 bg-emerald-500/10 rounded-xl text-emerald-400"><i data-lucide="trending-up" class="w-4 h-4"></i></div>
           </div>
           <div id="fin-total-incomes" class="text-2xl lg:text-3xl font-extrabold text-emerald-400 font-mono">$0</div>
           <p class="text-xs text-slate-500 mt-1">Membresías y otros ingresos</p>
         </div>
 
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
           <div class="flex items-center justify-between text-xs text-slate-400 uppercase font-semibold mb-2">
             <span>Egresos / Gastos</span>
-            <i data-lucide="trending-down" class="w-4 h-4 text-red-400"></i>
+            <div class="p-2 bg-rose-500/10 rounded-xl text-rose-400"><i data-lucide="trending-down" class="w-4 h-4"></i></div>
           </div>
-          <div id="fin-total-expenses" class="text-2xl lg:text-3xl font-extrabold text-red-400 font-mono">$0</div>
+          <div id="fin-total-expenses" class="text-2xl lg:text-3xl font-extrabold text-rose-400 font-mono">$0</div>
           <p class="text-xs text-slate-500 mt-1">Entrenadores, arriendo, servicios</p>
         </div>
 
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
           <div class="flex items-center justify-between text-xs text-slate-400 uppercase font-semibold mb-2">
             <span>Resultado Neto (Caja)</span>
-            <i data-lucide="scale" class="w-4 h-4 text-blue-400"></i>
+            <div class="p-2 bg-blue-500/10 rounded-xl text-blue-400"><i data-lucide="scale" class="w-4 h-4"></i></div>
           </div>
           <div id="fin-net-result" class="text-2xl lg:text-3xl font-extrabold text-white font-mono">$0</div>
           <p class="text-xs text-slate-500 mt-1">Ingresos menos Egresos</p>
@@ -364,28 +387,28 @@
       </div>
 
       <!-- Acciones de Registro & Movimientos -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h2 class="text-xl font-bold">Movimientos de Caja</h2>
-            <p class="text-slate-400 text-xs">Historial detallado de ingresos y egresos</p>
+            <h2 class="text-xl font-bold tracking-tight">Movimientos de Caja</h2>
+            <p class="text-slate-400 text-xs">Historial detallado con categorización</p>
           </div>
           <div class="flex flex-wrap gap-2">
-            <button onclick="openNewExpenseModal()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-semibold py-2 px-3.5 rounded-xl transition flex items-center gap-1.5">
+            <button onclick="openModal('modal-new-expense')" class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-semibold py-2 px-3.5 rounded-xl transition flex items-center gap-1.5">
               <i data-lucide="minus-circle" class="w-4 h-4"></i> Registrar Gasto
             </button>
-            <button onclick="openCoachPaymentModal()" class="bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-semibold py-2 px-3.5 rounded-xl transition flex items-center gap-1.5">
+            <button onclick="openModal('modal-coach-payment')" class="bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-semibold py-2 px-3.5 rounded-xl transition flex items-center gap-1.5">
               <i data-lucide="user-check" class="w-4 h-4"></i> Pago a Entrenador
             </button>
-            <button onclick="openNewIncomeModal()" class="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold py-2 px-3.5 rounded-xl transition flex items-center gap-1.5">
+            <button onclick="openModal('modal-new-income')" class="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold py-2 px-3.5 rounded-xl transition flex items-center gap-1.5">
               <i data-lucide="plus-circle" class="w-4 h-4"></i> Otro Ingreso
             </button>
           </div>
         </div>
 
-        <div class="overflow-x-auto rounded-xl border border-slate-800">
+        <div class="overflow-x-auto rounded-2xl border border-slate-800">
           <table class="w-full text-left text-sm">
-            <thead class="bg-slate-950/80 text-slate-400 border-b border-slate-800 text-xs uppercase tracking-wider">
+            <thead class="bg-slate-950 text-slate-400 border-b border-slate-800 text-xs uppercase tracking-wider">
               <tr>
                 <th class="py-3 px-4">Fecha</th>
                 <th class="py-3 px-4">Tipo</th>
@@ -394,7 +417,7 @@
                 <th class="py-3 px-4 text-right">Monto</th>
               </tr>
             </thead>
-            <tbody id="finances-table-body" class="divide-y divide-slate-800/60">
+            <tbody id="finances-table-body" class="divide-y divide-slate-800/60 bg-slate-900/50">
               <tr><td colspan="5" class="text-center py-8 text-slate-500">Cargando movimientos...</td></tr>
             </tbody>
           </table>
@@ -408,25 +431,25 @@
     <section id="tab-whatsapp" class="tab-view hidden space-y-6">
       
       <!-- Estado de Baileys / QR -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <div class="flex items-center gap-2 mb-2">
-              <span class="text-xs uppercase tracking-wider font-semibold text-emerald-400 bg-emerald-500/10 px-3 py-0.5 rounded-full border border-emerald-500/20">
+              <span class="text-[11px] uppercase tracking-wider font-bold text-emerald-400 bg-emerald-500/10 px-3 py-0.5 rounded-full border border-emerald-500/20">
                 Baileys Open-Source + Gemini IA
               </span>
             </div>
-            <h2 class="text-2xl font-bold">Conexión de WhatsApp</h2>
+            <h2 class="text-2xl font-bold tracking-tight">Conexión de WhatsApp</h2>
             <p class="text-slate-400 text-sm max-w-xl">
-              Vincula el WhatsApp del gimnasio escaneando el código QR. El bot detectará clientes inactivos y vencimientos para enviarles mensajes automáticos redactados por IA.
+              Escanea el código QR con el celular del gimnasio. El sistema detecta socios inactivos ($\ge 5$ días) y vencimientos ($\le 3$ días) y redacta mensajes personalizados con IA.
             </p>
           </div>
 
           <div class="flex items-center gap-3">
-            <button id="btn-wa-connect" onclick="connectWhatsApp()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-emerald-900/30">
-              <i data-lucide="qr-code" class="w-5 h-5"></i> Vincular / Generar QR
+            <button id="btn-wa-connect" onclick="connectWhatsApp()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-emerald-950 text-sm">
+              <i data-lucide="qr-code" class="w-4 h-4"></i> Vincular / Generar QR
             </button>
-            <button id="btn-wa-disconnect" onclick="disconnectWhatsApp()" class="hidden bg-red-600/20 hover:bg-red-600/30 text-red-300 border border-red-500/30 font-semibold py-2.5 px-4 rounded-xl transition flex items-center gap-2">
+            <button id="btn-wa-disconnect" onclick="confirmDisconnectWhatsApp()" class="hidden bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 font-semibold py-2.5 px-4 rounded-xl transition flex items-center gap-2 text-sm">
               <i data-lucide="power" class="w-4 h-4"></i> Desconectar
             </button>
           </div>
@@ -434,7 +457,7 @@
 
         <!-- Contenedor del QR Code -->
         <div id="wa-qr-container" class="mt-6 hidden flex flex-col items-center justify-center p-8 bg-slate-950 rounded-2xl border border-slate-800">
-          <p class="text-sm font-medium text-emerald-400 mb-4 animate-pulse">Escanea este código con WhatsApp en tu celular:</p>
+          <p class="text-sm font-semibold text-emerald-400 mb-4 animate-pulse">Escanea este código con WhatsApp en tu celular:</p>
           <div class="p-4 bg-white rounded-2xl shadow-2xl">
             <img id="wa-qr-image" src="" alt="Código QR WhatsApp" class="w-64 h-64 object-contain" />
           </div>
@@ -442,27 +465,27 @@
         </div>
 
         <!-- Contenedor Conectado -->
-        <div id="wa-connected-container" class="mt-6 hidden p-6 bg-emerald-950/30 border border-emerald-500/30 rounded-2xl flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+        <div id="wa-connected-container" class="mt-6 hidden p-6 bg-emerald-950/20 border border-emerald-500/30 rounded-2xl flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
             <i data-lucide="check-check" class="w-7 h-7"></i>
           </div>
           <div>
             <h4 class="font-bold text-emerald-300 text-base">WhatsApp Vinculado y Activo</h4>
-            <p id="wa-connected-phone" class="text-xs text-slate-400">Listo para enviar mensajes automáticos de seguimiento.</p>
+            <p id="wa-connected-phone" class="text-xs text-slate-400">Listo para enviar mensajes de seguimiento.</p>
           </div>
         </div>
       </div>
 
       <!-- Candidatos Detectados por Reglas e IA -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h3 class="text-lg font-bold flex items-center gap-2">
+            <h3 class="text-lg font-bold flex items-center gap-2 text-white">
               <i data-lucide="sparkles" class="w-5 h-5 text-purple-400"></i> Seguimiento Inteligente (Hoy)
             </h3>
-            <p class="text-slate-400 text-xs">Clientes que cumplen las condiciones de inactividad o vencimiento próximo.</p>
+            <p class="text-slate-400 text-xs">Candidatos detectados según reglas de inactividad o vencimiento próximo.</p>
           </div>
-          <button onclick="loadWhatsAppCandidates()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1.5">
+          <button onclick="loadWhatsAppCandidates()" class="text-xs bg-slate-950 hover:bg-slate-800 text-slate-300 px-3 py-1.5 rounded-xl border border-slate-800 transition flex items-center gap-1.5">
             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Actualizar
           </button>
         </div>
@@ -480,7 +503,7 @@
     <section id="tab-dashboard" class="tab-view hidden space-y-6">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl">
           <div class="flex items-center justify-between text-xs text-slate-400 uppercase font-semibold mb-2">
             <span>Clientes Registrados</span>
             <i data-lucide="users" class="w-4 h-4 text-emerald-400"></i>
@@ -489,7 +512,7 @@
           <p id="dash-active-clients" class="text-xs text-emerald-400 mt-1">0 activos</p>
         </div>
 
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl">
           <div class="flex items-center justify-between text-xs text-slate-400 uppercase font-semibold mb-2">
             <span>Membresías Vigentes</span>
             <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
@@ -498,7 +521,7 @@
           <p id="dash-expiring-memberships" class="text-xs text-amber-400 mt-1">0 por vencer (< 3 días)</p>
         </div>
 
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl">
           <div class="flex items-center justify-between text-xs text-slate-400 uppercase font-semibold mb-2">
             <span>Asistencias Hoy</span>
             <i data-lucide="flame" class="w-4 h-4 text-orange-400"></i>
@@ -507,7 +530,7 @@
           <p id="dash-month-attendances" class="text-xs text-slate-400 mt-1">0 este mes</p>
         </div>
 
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl">
           <div class="flex items-center justify-between text-xs text-slate-400 uppercase font-semibold mb-2">
             <span>Balance Neto Mes</span>
             <i data-lucide="dollar-sign" class="w-4 h-4 text-blue-400"></i>
@@ -519,20 +542,20 @@
       </div>
 
       <!-- Resumen de Estado de Membresías -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-        <h3 class="text-lg font-bold mb-4">Estado General de la Base de Socios</h3>
+      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl">
+        <h3 class="text-lg font-bold mb-4 tracking-tight">Estado General de Socios</h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
           <div class="p-5 bg-emerald-950/20 border border-emerald-500/30 rounded-2xl">
-            <span class="text-xs text-emerald-400 font-semibold uppercase">Vigentes</span>
-            <div id="dash-kpi-vigentes" class="text-3xl font-bold text-white mt-1">0</div>
+            <span class="text-xs text-emerald-400 font-bold uppercase tracking-wider">Vigentes</span>
+            <div id="dash-kpi-vigentes" class="text-3xl font-extrabold text-white mt-1">0</div>
           </div>
           <div class="p-5 bg-amber-950/20 border border-amber-500/30 rounded-2xl">
-            <span class="text-xs text-amber-400 font-semibold uppercase">Próximas a Vencer</span>
-            <div id="dash-kpi-porvencer" class="text-3xl font-bold text-white mt-1">0</div>
+            <span class="text-xs text-amber-400 font-bold uppercase tracking-wider">Próximas a Vencer</span>
+            <div id="dash-kpi-porvencer" class="text-3xl font-extrabold text-white mt-1">0</div>
           </div>
-          <div class="p-5 bg-red-950/20 border border-red-500/30 rounded-2xl">
-            <span class="text-xs text-red-400 font-semibold uppercase">Vencidas</span>
-            <div id="dash-kpi-vencidas" class="text-3xl font-bold text-white mt-1">0</div>
+          <div class="p-5 bg-rose-950/20 border border-rose-500/30 rounded-2xl">
+            <span class="text-xs text-rose-400 font-bold uppercase tracking-wider">Vencidas</span>
+            <div id="dash-kpi-vencidas" class="text-3xl font-extrabold text-white mt-1">0</div>
           </div>
         </div>
       </div>
@@ -541,44 +564,111 @@
   </main>
 
   <!-- ========================================== -->
-  <!-- MODALES DE APOYO -->
+  <!-- MODALES DEL SISTEMA -->
   <!-- ========================================== -->
 
   <!-- MODAL: NUEVO CLIENTE (DP-001) -->
-  <div id="modal-new-client" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+  <div id="modal-new-client" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-bold">Registrar Nuevo Cliente</h3>
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <i data-lucide="user-plus" class="w-5 h-5 text-emerald-400"></i> Registrar Nuevo Cliente
+        </h3>
         <button onclick="closeModal('modal-new-client')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
       <form onsubmit="handleCreateClient(event)" class="space-y-4 text-sm">
         <div>
           <label class="block text-slate-300 font-medium mb-1">Cédula / Documento *</label>
-          <input type="text" id="new-client-doc" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-emerald-500" />
+          <input type="text" id="new-client-doc" required placeholder="Ej: 1020304050" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-emerald-500 transition" />
         </div>
         <div>
           <label class="block text-slate-300 font-medium mb-1">Nombre Completo *</label>
-          <input type="text" id="new-client-name" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500" />
+          <input type="text" id="new-client-name" required placeholder="Ej: Marcela Restrepo" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-emerald-500 transition" />
         </div>
         <div>
           <label class="block text-slate-300 font-medium mb-1">Teléfono Móvil (WhatsApp) *</label>
-          <input type="tel" id="new-client-phone" required placeholder="Ej: 3101234567" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-emerald-500" />
+          <input type="tel" id="new-client-phone" required placeholder="Ej: 3101234567" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-emerald-500 transition" />
         </div>
         <div>
           <label class="block text-slate-300 font-medium mb-1">Notas / Observaciones</label>
-          <input type="text" id="new-client-notes" placeholder="Opcional..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500" />
+          <input type="text" id="new-client-notes" placeholder="Opcional..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-emerald-500 transition" />
         </div>
         <div class="flex gap-2 pt-2">
-          <button type="button" onclick="closeModal('modal-new-client')" class="flex-1 bg-slate-800 hover:bg-slate-700 py-2.5 rounded-xl font-medium transition text-slate-300">Cancelar</button>
-          <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl font-bold text-white transition">Guardar</button>
+          <button type="button" onclick="closeModal('modal-new-client')" class="flex-1 bg-slate-950 hover:bg-slate-800 py-2.5 rounded-xl font-medium transition text-slate-300 border border-slate-800">Cancelar</button>
+          <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl font-bold text-white transition shadow-md shadow-emerald-950">Guardar</button>
         </div>
       </form>
     </div>
   </div>
 
+  <!-- MODAL: CREAR PLAN DE MEMBRESÍA -->
+  <div id="modal-new-plan" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <i data-lucide="tag" class="w-5 h-5 text-emerald-400"></i> Crear Nuevo Plan
+        </h3>
+        <button onclick="closeModal('modal-new-plan')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <form onsubmit="handleCreatePlan(event)" class="space-y-4 text-sm">
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">Nombre del Plan *</label>
+          <input type="text" id="new-plan-name" required placeholder="Ej: Plan Pareja / Semestral" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-emerald-500 transition" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-300 font-medium mb-1">Duración (Días) *</label>
+            <input type="number" id="new-plan-days" required min="1" placeholder="30" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-emerald-500 transition" />
+          </div>
+          <div>
+            <label class="block text-slate-300 font-medium mb-1">Precio ($ COP) *</label>
+            <input type="number" id="new-plan-price" required min="1000" placeholder="90000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-emerald-500 transition" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">Descripción</label>
+          <input type="text" id="new-plan-desc" placeholder="Detalles de acceso..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-emerald-500 transition" />
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="closeModal('modal-new-plan')" class="flex-1 bg-slate-950 hover:bg-slate-800 py-2.5 rounded-xl font-medium transition text-slate-300 border border-slate-800">Cancelar</button>
+          <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl font-bold text-white transition shadow-md shadow-emerald-950">Crear Plan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: AUTORIZAR EXCEPCIÓN MANUAL (DP-003) -->
+  <div id="modal-override-checkin" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-rose-500/40 rounded-3xl p-6 max-w-md w-full shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-rose-400 flex items-center gap-2">
+          <i data-lucide="unlock" class="w-5 h-5"></i> Autorizar Excepción de Ingreso
+        </h3>
+        <button onclick="closeModal('modal-override-checkin')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <p class="text-slate-300 text-xs mb-4">
+        El cliente tiene la membresía vencida o no registrada. Registra la justificación que quedará en la bitácora de auditoría.
+      </p>
+
+      <!-- Presets rápidos -->
+      <div class="flex flex-wrap gap-1.5 mb-3">
+        <button type="button" onclick="setOverridePreset('Pago en proceso')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-lg border border-slate-700">Pago en proceso</button>
+        <button type="button" onclick="setOverridePreset('Cortesía de administración')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-lg border border-slate-700">Cortesía</button>
+        <button type="button" onclick="setOverridePreset('Olvido de celular / Pago pendiente')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-lg border border-slate-700">Transferencia pendiente</button>
+      </div>
+
+      <textarea id="override-reason-input" rows="3" placeholder="Escribe el motivo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm outline-none focus:border-rose-500 transition mb-4"></textarea>
+
+      <div class="flex gap-2">
+        <button type="button" onclick="closeModal('modal-override-checkin')" class="flex-1 bg-slate-950 hover:bg-slate-800 py-2.5 rounded-xl font-medium transition text-slate-300 border border-slate-800">Cancelar</button>
+        <button type="button" onclick="confirmOverrideCheckIn()" class="flex-1 bg-rose-600 hover:bg-rose-500 py-2.5 rounded-xl font-bold text-white transition shadow-md shadow-rose-950">Autorizar Ingreso</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: FICHA 360° DE CLIENTE -->
-  <div id="modal-client-detail" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+  <div id="modal-client-detail" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
         <div>
           <h3 id="detail-client-name" class="text-xl font-bold text-white">Nombre Cliente</h3>
@@ -588,76 +678,106 @@
       </div>
 
       <!-- Estado de Membresía Actual -->
-      <div id="detail-membership-banner" class="mb-6 p-4 rounded-xl border"></div>
+      <div id="detail-membership-banner" class="mb-6 p-4 rounded-2xl border"></div>
 
       <!-- Tabs secundarias en la ficha -->
       <div class="space-y-4">
-        <h4 class="font-bold text-sm text-slate-300 uppercase tracking-wider">Historial de Pagos y Membresías</h4>
+        <h4 class="font-bold text-xs text-slate-300 uppercase tracking-wider">Historial de Pagos y Membresías</h4>
         <div id="detail-payments-list" class="space-y-2 max-h-40 overflow-y-auto text-xs"></div>
 
-        <h4 class="font-bold text-sm text-slate-300 uppercase tracking-wider pt-2">Historial de Asistencias</h4>
+        <h4 class="font-bold text-xs text-slate-300 uppercase tracking-wider pt-2">Historial de Asistencias</h4>
         <div id="detail-attendances-list" class="space-y-2 max-h-40 overflow-y-auto text-xs"></div>
       </div>
     </div>
   </div>
 
   <!-- MODAL: REGISTRAR GASTO -->
-  <div id="modal-new-expense" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+  <div id="modal-new-expense" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-bold text-red-400">Registrar Gasto / Compra</h3>
+        <h3 class="text-lg font-bold text-rose-400 flex items-center gap-2">
+          <i data-lucide="minus-circle" class="w-5 h-5"></i> Registrar Gasto / Compra
+        </h3>
         <button onclick="closeModal('modal-new-expense')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
       <form onsubmit="handleCreateExpense(event)" class="space-y-4 text-sm">
         <div>
-          <label class="block text-slate-300 font-medium mb-1">Categoría</label>
-          <select id="expense-category" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-red-500"></select>
+          <label class="block text-slate-300 font-medium mb-1">Categoría *</label>
+          <select id="expense-category" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-rose-500 transition"></select>
         </div>
         <div>
           <label class="block text-slate-300 font-medium mb-1">Concepto / Detalle *</label>
-          <input type="text" id="expense-concept" required placeholder="Ej: Pago recibo de luz..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-red-500" />
+          <input type="text" id="expense-concept" required placeholder="Ej: Recibo de energía eléctrica..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-rose-500 transition" />
         </div>
         <div>
-          <label class="block text-slate-300 font-medium mb-1">Valor ($) *</label>
-          <input type="number" id="expense-amount" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-red-500" />
+          <label class="block text-slate-300 font-medium mb-1">Valor ($ COP) *</label>
+          <input type="number" id="expense-amount" required min="100" placeholder="Ej: 150000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-rose-500 transition" />
         </div>
         <div class="flex gap-2 pt-2">
-          <button type="button" onclick="closeModal('modal-new-expense')" class="flex-1 bg-slate-800 hover:bg-slate-700 py-2.5 rounded-xl font-medium transition text-slate-300">Cancelar</button>
-          <button type="submit" class="flex-1 bg-red-600 hover:bg-red-500 py-2.5 rounded-xl font-bold text-white transition">Guardar Gasto</button>
+          <button type="button" onclick="closeModal('modal-new-expense')" class="flex-1 bg-slate-950 hover:bg-slate-800 py-2.5 rounded-xl font-medium transition text-slate-300 border border-slate-800">Cancelar</button>
+          <button type="submit" class="flex-1 bg-rose-600 hover:bg-rose-500 py-2.5 rounded-xl font-bold text-white transition shadow-md shadow-rose-950">Guardar Gasto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: OTRO INGRESO -->
+  <div id="modal-new-income" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-emerald-400 flex items-center gap-2">
+          <i data-lucide="plus-circle" class="w-5 h-5"></i> Registrar Ingreso Extra
+        </h3>
+        <button onclick="closeModal('modal-new-income')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <form onsubmit="handleCreateIncome(event)" class="space-y-4 text-sm">
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">Concepto *</label>
+          <input type="text" id="income-concept" required placeholder="Ej: Venta de proteína / Bebidas" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-emerald-500 transition" />
+        </div>
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">Valor ($ COP) *</label>
+          <input type="number" id="income-amount" required min="100" placeholder="Ej: 25000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-emerald-500 transition" />
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="closeModal('modal-new-income')" class="flex-1 bg-slate-950 hover:bg-slate-800 py-2.5 rounded-xl font-medium transition text-slate-300 border border-slate-800">Cancelar</button>
+          <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl font-bold text-white transition shadow-md shadow-emerald-950">Guardar Ingreso</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- MODAL: PAGO A ENTRENADOR (RF-025) -->
-  <div id="modal-coach-payment" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+  <div id="modal-coach-payment" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-bold text-purple-400">Registrar Pago a Entrenador</h3>
+        <h3 class="text-lg font-bold text-purple-400 flex items-center gap-2">
+          <i data-lucide="user-check" class="w-5 h-5"></i> Registrar Pago a Entrenador
+        </h3>
         <button onclick="closeModal('modal-coach-payment')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
       <form onsubmit="handleCoachPayment(event)" class="space-y-4 text-sm">
         <div>
           <label class="block text-slate-300 font-medium mb-1">Nombre del Entrenador *</label>
-          <input type="text" id="coach-name" required placeholder="Ej: Carlos Gómez..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500" />
+          <input type="text" id="coach-name" required placeholder="Ej: Miguel Ángel Torres" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-purple-500 transition" />
         </div>
         <div>
           <label class="block text-slate-300 font-medium mb-1">Periodo / Concepto *</label>
-          <input type="text" id="coach-period" required placeholder="Ej: Quincena 1 - Octubre..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500" />
+          <input type="text" id="coach-period" required placeholder="Ej: Quincena 1 - Octubre" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-purple-500 transition" />
         </div>
         <div>
-          <label class="block text-slate-300 font-medium mb-1">Valor a Pagar ($) *</label>
-          <input type="number" id="coach-amount" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-purple-500" />
+          <label class="block text-slate-300 font-medium mb-1">Valor a Pagar ($ COP) *</label>
+          <input type="number" id="coach-amount" required min="1000" placeholder="Ej: 200000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-purple-500 transition" />
         </div>
         <div class="flex gap-2 pt-2">
-          <button type="button" onclick="closeModal('modal-coach-payment')" class="flex-1 bg-slate-800 hover:bg-slate-700 py-2.5 rounded-xl font-medium transition text-slate-300">Cancelar</button>
-          <button type="submit" class="flex-1 bg-purple-600 hover:bg-purple-500 py-2.5 rounded-xl font-bold text-white transition">Registrar Pago</button>
+          <button type="button" onclick="closeModal('modal-coach-payment')" class="flex-1 bg-slate-950 hover:bg-slate-800 py-2.5 rounded-xl font-medium transition text-slate-300 border border-slate-800">Cancelar</button>
+          <button type="submit" class="flex-1 bg-purple-600 hover:bg-purple-500 py-2.5 rounded-xl font-bold text-white transition shadow-md shadow-purple-950">Registrar Pago</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- SCRIPT LOGIC -->
+  <!-- SCRIPT PRINCIPAL -->
   <script src="/app.js"></script>
 </body>
 </html>

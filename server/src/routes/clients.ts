@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { clientService } from '../services/clientService.js';
 import { membershipService } from '../services/membershipService.js';
 import { attendanceService } from '../services/attendanceService.js';
+import { auditService } from '../services/auditService.js';
 
 export const clientRouter = Router();
 
@@ -41,15 +42,31 @@ clientRouter.get('/:id', (req, res) => {
   }
 });
 
-// POST /api/clients - Crear cliente
+// POST /api/clients - Crear cliente con validación estricta (DP-001)
 clientRouter.post('/', (req, res) => {
   try {
     const { documentId, fullName, phone, notes } = req.body;
-    if (!documentId || !fullName || !phone) {
-      return res.status(400).json({ error: 'Documento, Nombre y Teléfono son obligatorios' });
+
+    if (!documentId || typeof documentId !== 'string' || documentId.trim().length < 3) {
+      return res.status(400).json({ error: 'El documento es obligatorio y debe tener al menos 3 caracteres.' });
+    }
+    if (!fullName || typeof fullName !== 'string' || fullName.trim().length < 2) {
+      return res.status(400).json({ error: 'El nombre completo es obligatorio.' });
+    }
+    if (!phone || typeof phone !== 'string' || phone.replace(/\D/g, '').length < 7) {
+      return res.status(400).json({ error: 'El teléfono debe contener al menos 7 dígitos válidos.' });
     }
 
     const newClient = clientService.create({ documentId, fullName, phone, notes });
+
+    auditService.log(
+      'CREATE_CLIENT',
+      'Client',
+      newClient.id,
+      `Cliente creado: ${newClient.full_name} (CC: ${newClient.document_id})`,
+      'Admin'
+    );
+
     res.status(201).json(newClient);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -60,7 +77,20 @@ clientRouter.post('/', (req, res) => {
 clientRouter.put('/:id', (req, res) => {
   try {
     const { fullName, phone, notes, status } = req.body;
+    if (phone && phone.replace(/\D/g, '').length < 7) {
+      return res.status(400).json({ error: 'El teléfono debe contener al menos 7 dígitos.' });
+    }
+
     const updated = clientService.update(req.params.id, { fullName, phone, notes, status });
+
+    auditService.log(
+      'UPDATE_CLIENT',
+      'Client',
+      updated.id,
+      `Cliente modificado: ${updated.full_name}`,
+      'Admin'
+    );
+
     res.json(updated);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -71,6 +101,15 @@ clientRouter.put('/:id', (req, res) => {
 clientRouter.patch('/:id/deactivate', (req, res) => {
   try {
     const deactivated = clientService.deactivate(req.params.id);
+
+    auditService.log(
+      'DEACTIVATE_CLIENT',
+      'Client',
+      deactivated.id,
+      `Cliente marcado como INACTIVO: ${deactivated.full_name}`,
+      'Admin'
+    );
+
     res.json(deactivated);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
