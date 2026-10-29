@@ -1,783 +1,1108 @@
 <!DOCTYPE html>
-<html lang="es" class="h-full bg-slate-950 text-slate-100">
+<html lang="es" class="h-full">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GIM — Sistema de Gestión para Gimnasio</title>
+  <title>FITZONE — Sistema de Gestión para Gimnasio</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
-      darkMode: 'class',
       theme: {
         extend: {
-          colors: {
-            gym: {
-              dark: '#080c14',
-              surface: '#0f172a',
-              card: '#141e33',
-              border: '#1e293b',
-              accent: '#10b981',
-              accentHover: '#059669',
-              danger: '#f43f5e',
-              warning: '#f59e0b',
-              info: '#38bdf8',
-            }
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
           },
-          boxShadow: {
-            'glow-emerald': '0 0 25px -5px rgba(16, 185, 129, 0.25)',
-            'glow-rose': '0 0 25px -5px rgba(244, 63, 94, 0.3)',
+          colors: {
+            fitzone: {
+              sidebar: '#172229',
+              sidebarHover: '#21303a',
+              sidebarActive: '#345e4f',
+              green: '#1f8e55',
+              greenHover: '#187544',
+              greenLight: '#e6f4ea',
+              bg: '#f0f4f7',
+            }
           }
         }
       }
     }
   </script>
   <style>
-    @keyframes pulse-soft {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #f0f4f7;
+      color: #1e293b;
     }
-    .animate-pulse-soft {
-      animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-    /* Scrollbars delgados y estilizados */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
     }
     ::-webkit-scrollbar-track {
-      background: #080c14;
+      background: #f0f4f7;
     }
     ::-webkit-scrollbar-thumb {
-      background: #1e293b;
+      background: #cbd5e1;
       border-radius: 4px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: #334155;
+      background: #94a3b8;
     }
-    .glass-panel {
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+    .sidebar-motiv {
+      background-image: linear-gradient(to top, rgba(15, 25, 32, 0.95) 20%, rgba(23, 34, 41, 0.55) 100%), url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=500&q=80');
+      background-size: cover;
+      background-position: center;
     }
   </style>
 </head>
-<body class="h-full flex flex-col font-sans selection:bg-emerald-500 selection:text-white bg-[#080c14]">
+<body class="h-full flex overflow-hidden bg-[#f0f4f7]">
 
   <!-- CONTENEDOR FLOTANTE DE NOTIFICACIONES TOAST -->
   <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none"></div>
 
-  <!-- TOP HEADER -->
-  <header class="glass-panel border-b border-slate-800/80 sticky top-0 z-40 px-4 lg:px-8 py-3 flex items-center justify-between shadow-xl">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-inner">
-        <i data-lucide="dumbbell" class="w-5 h-5"></i>
+  <!-- ========================================== -->
+  <!-- SIDEBAR IZQUIERDO (ESTILO FITZONE) -->
+  <!-- ========================================== -->
+  <aside class="hidden lg:flex flex-col w-64 bg-[#172229] text-slate-200 shrink-0 select-none justify-between">
+    <div>
+      <!-- LOGO -->
+      <div class="px-6 py-6 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-white">
+          <i data-lucide="dumbbell" class="w-6 h-6 text-emerald-400"></i>
+        </div>
+        <div>
+          <span class="font-extrabold text-xl tracking-wider text-white block leading-none">FITZONE</span>
+          <span class="text-[9px] uppercase tracking-[0.2em] text-slate-400 font-semibold block mt-1">TU MEJOR VERSIÓN</span>
+        </div>
       </div>
-      <div>
-        <h1 class="font-extrabold text-lg leading-tight tracking-tight flex items-center gap-2">
-          GIM <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-wider">Fase 1</span>
-        </h1>
-        <p class="text-xs text-slate-400">Control Operativo & WhatsApp Bot</p>
-      </div>
+
+      <!-- MENÚ DE NAVEGACIÓN -->
+      <nav class="px-3 space-y-1 mt-2">
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition bg-[#345e4f] text-white shadow-sm">
+          <i data-lucide="home" class="w-5 h-5"></i>
+          <span>Inicio</span>
+        </button>
+
+        <button onclick="switchTab('clients')" id="nav-clients" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-[#21303a] hover:text-white transition">
+          <i data-lucide="users" class="w-5 h-5"></i>
+          <span>Miembros</span>
+        </button>
+
+        <button onclick="switchTab('memberships')" id="nav-memberships" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-[#21303a] hover:text-white transition">
+          <i data-lucide="credit-card" class="w-5 h-5"></i>
+          <span>Membresías</span>
+        </button>
+
+        <button onclick="switchTab('checkin')" id="nav-checkin" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-[#21303a] hover:text-white transition">
+          <div class="flex items-center gap-3.5">
+            <i data-lucide="check-circle" class="w-5 h-5"></i>
+            <span>Asistencia</span>
+          </div>
+          <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">Portería</span>
+        </button>
+
+        <button onclick="switchTab('finances')" id="nav-finances" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-[#21303a] hover:text-white transition">
+          <i data-lucide="dollar-sign" class="w-5 h-5"></i>
+          <span>Pagos y Finanzas</span>
+        </button>
+
+        <button onclick="switchTab('whatsapp')" id="nav-whatsapp" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-[#21303a] hover:text-white transition">
+          <div class="flex items-center gap-3.5">
+            <i data-lucide="message-square" class="w-5 h-5"></i>
+            <span>WhatsApp IA</span>
+          </div>
+          <span id="sidebar-wa-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+        </button>
+
+        <button onclick="switchTab('config')" id="nav-config" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-[#21303a] hover:text-white transition">
+          <i data-lucide="settings" class="w-5 h-5"></i>
+          <span>Configuración</span>
+        </button>
+      </nav>
     </div>
 
-    <!-- NAVEGACIÓN PRINCIPAL ESCRITORIO -->
-    <nav class="hidden md:flex items-center gap-1 bg-slate-950/80 p-1 rounded-2xl border border-slate-800/90 shadow-inner">
-      <button onclick="switchTab('checkin')" id="nav-checkin" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-2 bg-emerald-600 text-white shadow-md shadow-emerald-950">
-        <i data-lucide="scan-face" class="w-4 h-4"></i> Asistencia
-      </button>
-      <button onclick="switchTab('clients')" id="nav-clients" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900">
-        <i data-lucide="users" class="w-4 h-4"></i> Clientes
-      </button>
-      <button onclick="switchTab('memberships')" id="nav-memberships" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900">
-        <i data-lucide="credit-card" class="w-4 h-4"></i> Membresías
-      </button>
-      <button onclick="switchTab('finances')" id="nav-finances" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900">
-        <i data-lucide="wallet" class="w-4 h-4"></i> Finanzas
-      </button>
-      <button onclick="switchTab('whatsapp')" id="nav-whatsapp" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900">
-        <i data-lucide="message-square" class="w-4 h-4"></i> WhatsApp
-      </button>
-      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900">
-        <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Panel
-      </button>
-    </nav>
-
-    <!-- ESTADO WHATSAPP & BOTÓN DE SONIDO -->
-    <div class="flex items-center gap-2">
-      <!-- Botón de Silencio/Audio -->
-      <button id="btn-toggle-sound" onclick="toggleSound()" title="Activar/Silenciar sonido de asistencia" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition">
-        <i data-lucide="volume-2" id="icon-sound" class="w-4 h-4 text-emerald-400"></i>
-      </button>
-
-      <!-- Pill de estado de WhatsApp -->
-      <div id="header-whatsapp-pill" class="flex items-center gap-2 text-xs py-1.5 px-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 cursor-pointer hover:border-slate-700 transition" onclick="switchTab('whatsapp')">
-        <span id="wa-indicator-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
-        <span id="wa-status-text" class="font-medium text-[11px]">WhatsApp: Verificando...</span>
+    <!-- TARJETA MOTIVACIONAL INFERIOR -->
+    <div class="p-4">
+      <div class="sidebar-motiv rounded-2xl p-5 h-48 flex flex-col justify-end border border-slate-700/50 shadow-lg">
+        <p class="text-white font-extrabold italic text-lg leading-tight tracking-wide uppercase">
+          DISCIPLINA<br>HOY,<br>RESULTADOS<br>MAÑANA
+        </p>
+        <div class="w-12 h-1 bg-[#1f8e55] rounded-full mt-2.5"></div>
       </div>
     </div>
-  </header>
+  </aside>
 
-  <!-- NAVEGACIÓN MÓVIL (BARRA INFERIOR) -->
-  <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-slate-800 grid grid-cols-6 py-2 px-1 text-center text-[10px]">
-    <button onclick="switchTab('checkin')" class="flex flex-col items-center gap-1 text-emerald-400 py-1">
-      <i data-lucide="scan-face" class="w-5 h-5"></i><span>Entrada</span>
-    </button>
-    <button onclick="switchTab('clients')" class="flex flex-col items-center gap-1 text-slate-400 py-1">
-      <i data-lucide="users" class="w-5 h-5"></i><span>Clientes</span>
-    </button>
-    <button onclick="switchTab('memberships')" class="flex flex-col items-center gap-1 text-slate-400 py-1">
-      <i data-lucide="credit-card" class="w-5 h-5"></i><span>Planes</span>
-    </button>
-    <button onclick="switchTab('finances')" class="flex flex-col items-center gap-1 text-slate-400 py-1">
-      <i data-lucide="wallet" class="w-5 h-5"></i><span>Caja</span>
-    </button>
-    <button onclick="switchTab('whatsapp')" class="flex flex-col items-center gap-1 text-slate-400 py-1">
-      <i data-lucide="message-square" class="w-5 h-5"></i><span>WhatsApp</span>
-    </button>
-    <button onclick="switchTab('dashboard')" class="flex flex-col items-center gap-1 text-slate-400 py-1">
-      <i data-lucide="layout-dashboard" class="w-5 h-5"></i><span>Panel</span>
-    </button>
-  </div>
+  <!-- ========================================== -->
+  <!-- CONTENEDOR DERECHO (TOPBAR + MAIN) -->
+  <!-- ========================================== -->
+  <div class="flex-1 flex flex-col h-full overflow-hidden">
 
-  <!-- MAIN VIEW CONTAINER -->
-  <main class="flex-1 overflow-y-auto p-4 md:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8">
+    <!-- TOPBAR BLANCA -->
+    <header class="bg-white border-b border-slate-200/80 h-16 px-4 lg:px-8 flex items-center justify-between shrink-0 z-30">
+      <!-- Buscador global -->
+      <div class="relative w-full max-w-md">
+        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+        <input 
+          type="text" 
+          id="global-search-input"
+          oninput="handleGlobalSearch(this.value)"
+          placeholder="Buscar miembros por nombre, documento o teléfono..." 
+          class="w-full bg-[#f3f6f8] hover:bg-slate-200/60 focus:bg-white border border-transparent focus:border-[#1f8e55] rounded-xl py-2 pl-10 pr-4 text-sm text-slate-700 outline-none transition"
+        />
+      </div>
 
-    <!-- ========================================== -->
-    <!-- 1. TAB: MOSTRADOR / REGISTRO DE ASISTENCIA -->
-    <!-- ========================================== -->
-    <section id="tab-checkin" class="tab-view block space-y-6">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Acciones derechas -->
+      <div class="flex items-center gap-4">
+        <!-- Botón de audio recepción -->
+        <button id="btn-toggle-sound" onclick="toggleSound()" title="Activar/Silenciar sonido de asistencia" class="p-2 rounded-xl bg-[#f3f6f8] hover:bg-slate-200 text-slate-600 transition">
+          <i data-lucide="volume-2" id="icon-sound" class="w-5 h-5 text-[#1f8e55]"></i>
+        </button>
+
+        <!-- Campana de notificaciones (Candidatos IA) -->
+        <button onclick="switchTab('whatsapp')" class="relative p-2 rounded-xl bg-[#f3f6f8] hover:bg-slate-200 text-slate-600 transition" title="Ver alertas de seguimiento IA">
+          <i data-lucide="bell" class="w-5 h-5"></i>
+          <span id="top-notif-badge" class="hidden absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow">0</span>
+        </button>
+
+        <!-- Perfil de Administrador -->
+        <div class="flex items-center gap-3 pl-2 border-l border-slate-200">
+          <div class="w-9 h-9 rounded-full bg-[#172229] text-white flex items-center justify-center font-bold text-sm shadow-sm">
+            AD
+          </div>
+          <div class="hidden sm:block text-left leading-tight">
+            <span class="font-bold text-sm text-slate-800 block">Administrador</span>
+            <span class="text-xs text-slate-500">Admin</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- NAVEGACIÓN MÓVIL INFERIOR -->
+    <div class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#172229] text-slate-300 border-t border-slate-800 grid grid-cols-6 py-2 px-1 text-center text-[10px]">
+      <button onclick="switchTab('dashboard')" class="flex flex-col items-center gap-1 py-1 text-emerald-400">
+        <i data-lucide="home" class="w-4 h-4"></i><span>Inicio</span>
+      </button>
+      <button onclick="switchTab('checkin')" class="flex flex-col items-center gap-1 py-1">
+        <i data-lucide="check-circle" class="w-4 h-4"></i><span>Entrada</span>
+      </button>
+      <button onclick="switchTab('clients')" class="flex flex-col items-center gap-1 py-1">
+        <i data-lucide="users" class="w-4 h-4"></i><span>Miembros</span>
+      </button>
+      <button onclick="switchTab('memberships')" class="flex flex-col items-center gap-1 py-1">
+        <i data-lucide="credit-card" class="w-4 h-4"></i><span>Planes</span>
+      </button>
+      <button onclick="switchTab('finances')" class="flex flex-col items-center gap-1 py-1">
+        <i data-lucide="dollar-sign" class="w-4 h-4"></i><span>Pagos</span>
+      </button>
+      <button onclick="switchTab('whatsapp')" class="flex flex-col items-center gap-1 py-1">
+        <i data-lucide="message-square" class="w-4 h-4"></i><span>WhatsApp</span>
+      </button>
+    </div>
+
+    <!-- ÁREA PRINCIPAL DESPLAZABLE -->
+    <main class="flex-1 overflow-y-auto p-4 lg:p-7 pb-24 lg:pb-10 space-y-6">
+
+      <!-- ========================================================================= -->
+      <!-- VISTA 1: INICIO (EL DASHBOARD INTEGRAL DEL BOCETO FITZONE) -->
+      <!-- ========================================================================= -->
+      <section id="tab-dashboard" class="tab-view block space-y-6">
         
-        <!-- Marcador principal -->
-        <div class="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col justify-between relative overflow-hidden">
-          <div class="absolute -top-24 -right-24 w-56 h-56 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
-
+        <!-- Saludo y Fecha -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div class="flex items-center justify-between mb-5">
-              <span class="text-[11px] uppercase tracking-wider font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                Punto de Acceso & Recepción
-              </span>
-              <span id="current-clock" class="text-sm font-mono text-slate-400 bg-slate-950 px-3 py-1 rounded-xl border border-slate-800">--:--:--</span>
+            <h1 class="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight">¡Bienvenido, Administrador!</h1>
+            <p class="text-slate-500 text-sm mt-0.5">Aquí tienes un resumen general de tu gimnasio.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2 text-xs font-medium text-slate-600 bg-white px-3.5 py-2 rounded-xl border border-slate-200/80 shadow-sm">
+              <i data-lucide="calendar" class="w-4 h-4 text-slate-400"></i>
+              <span id="current-date-display">29 de octubre de 2026</span>
             </div>
-            
-            <h2 class="text-2xl md:text-3xl font-black text-white mb-2 tracking-tight">Registro de Ingreso</h2>
-            <p class="text-slate-400 text-sm mb-6">Digita o escanea la cédula del cliente para verificar vigencia y autorizar el paso.</p>
+            <div class="flex items-center gap-2 text-xs font-semibold text-[#15803d] bg-[#dcfce7] px-3.5 py-2 rounded-xl">
+              <span class="w-2 h-2 rounded-full bg-[#15803d] animate-pulse"></span>
+              <span>Gimnasio abierto</span>
+            </div>
+            <button onclick="switchTab('checkin')" class="bg-[#1f8e55] hover:bg-[#187544] text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-sm transition flex items-center gap-1.5">
+              <i data-lucide="user-check" class="w-4 h-4"></i> Registrar Entrada
+            </button>
+          </div>
+        </div>
 
-            <form id="form-checkin" onsubmit="handleCheckIn(event)" class="space-y-4">
-              <div class="relative">
+        <!-- FILA 1: 4 TARJETAS KPI PRINCIPALES -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <!-- KPI 1: Miembros activos -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-start gap-4">
+            <div class="w-12 h-12 rounded-full bg-[#e6f4ea] text-[#1f8e55] flex items-center justify-center shrink-0 mt-1">
+              <i data-lucide="users" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <span class="text-xs font-medium text-slate-500">Miembros activos</span>
+              <div id="kpi-active-members" class="text-2xl lg:text-3xl font-extrabold text-slate-900 mt-0.5">0</div>
+              <p id="kpi-total-members-sub" class="text-xs font-semibold text-[#1f8e55] mt-1">↑ Activos en el sistema</p>
+            </div>
+          </div>
+
+          <!-- KPI 2: Ingresos del día / mes -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-start gap-4">
+            <div class="w-12 h-12 rounded-full bg-[#e6f4ea] text-[#1f8e55] flex items-center justify-center shrink-0 mt-1">
+              <i data-lucide="banknote" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <span class="text-xs font-medium text-slate-500">Ingresos del día</span>
+              <div id="kpi-today-incomes" class="text-2xl lg:text-3xl font-extrabold text-slate-900 mt-0.5">$ 0</div>
+              <p id="kpi-month-incomes-sub" class="text-xs font-semibold text-[#1f8e55] mt-1">↑ Mes: $ 0</p>
+            </div>
+          </div>
+
+          <!-- KPI 3: Membresías vigentes -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-start gap-4">
+            <div class="w-12 h-12 rounded-full bg-[#e6f4ea] text-[#1f8e55] flex items-center justify-center shrink-0 mt-1">
+              <i data-lucide="calendar-check" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <span class="text-xs font-medium text-slate-500">Membresías vigentes</span>
+              <div id="kpi-vigentes" class="text-2xl lg:text-3xl font-extrabold text-slate-900 mt-0.5">0</div>
+              <p id="kpi-por-vencer-sub" class="text-xs font-medium text-slate-500 mt-1">0 próximas a vencer</p>
+            </div>
+          </div>
+
+          <!-- KPI 4: Asistencia del día -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-start gap-4">
+            <div class="w-12 h-12 rounded-full bg-[#e6f4ea] text-[#1f8e55] flex items-center justify-center shrink-0 mt-1">
+              <i data-lucide="clipboard-check" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <span class="text-xs font-medium text-slate-500">Asistencia del día</span>
+              <div id="kpi-attendance-today" class="text-2xl lg:text-3xl font-extrabold text-slate-900 mt-0.5">0</div>
+              <p id="kpi-attendance-sub" class="text-xs font-semibold text-[#1f8e55] mt-1">↑ Entradas registradas hoy</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- FILA 2: GRÁFICA 7 DÍAS + CONTROL DE ENTRADA RÁPIDA + MIEMBROS RECIENTES -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          
+          <!-- Gráfica de línea: Asistencia últimos 7 días -->
+          <div class="lg:col-span-5 bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <i data-lucide="users" class="w-4 h-4 text-slate-600"></i>
+                <h3 class="font-bold text-sm text-slate-800">Asistencia de los últimos 7 días</h3>
+              </div>
+              <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg font-medium">Últimos 7 días</span>
+            </div>
+            <div id="chart-attendance-7d" class="w-full h-52 flex items-center justify-center">
+              <!-- SVG Inyectado dinámicamente -->
+            </div>
+          </div>
+
+          <!-- Marcaje Rápido / Estado de Membresías Hoy -->
+          <div class="lg:col-span-4 bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="scan-line" class="w-4 h-4 text-[#1f8e55]"></i>
+                  <h3 class="font-bold text-sm text-slate-800">Control Rápido de Asistencia</h3>
+                </div>
+                <button onclick="switchTab('checkin')" class="text-xs font-semibold text-[#1f8e55] hover:underline">Pantalla completa →</button>
+              </div>
+              <p class="text-xs text-slate-500 mb-3">Ingresa el número de documento para validar membresía y registrar entrada:</p>
+              
+              <form onsubmit="handleQuickDashboardCheckIn(event)" class="flex gap-2">
                 <input 
                   type="text" 
-                  id="checkin-doc" 
-                  placeholder="Cédula o Documento..." 
-                  class="w-full bg-slate-950 border-2 border-slate-800 focus:border-emerald-500 text-white text-xl md:text-2xl font-mono rounded-2xl py-4 px-5 pl-14 outline-none transition placeholder:text-slate-600 shadow-inner"
-                  autofocus
-                  autocomplete="off"
+                  id="quick-checkin-doc" 
+                  placeholder="Cédula del miembro..." 
                   required
+                  class="flex-1 bg-[#f3f6f8] border border-slate-200 focus:bg-white focus:border-[#1f8e55] rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-800 outline-none transition"
                 />
-                <i data-lucide="id-card" class="w-6 h-6 absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                <button type="submit" class="bg-[#1f8e55] hover:bg-[#187544] text-white font-semibold px-4 py-2.5 rounded-xl text-xs transition shrink-0 shadow-sm">
+                  Validar
+                </button>
+              </form>
+
+              <!-- Resultado instantáneo del marcaje rápido -->
+              <div id="quick-checkin-result" class="mt-3 hidden p-3 rounded-xl border text-xs"></div>
+            </div>
+
+            <!-- Barras de estado de membresías (como Clases de hoy en el boceto) -->
+            <div class="mt-4 pt-3 border-t border-slate-100 space-y-2.5">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-semibold text-slate-700 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-[#1f8e55]"></span> Membresías al día
+                </span>
+                <span id="bar-label-vigentes" class="font-bold text-slate-700">0</span>
+              </div>
+              <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div id="bar-fill-vigentes" class="h-full bg-[#1f8e55] rounded-full" style="width: 75%"></div>
               </div>
 
-              <div class="flex gap-3">
-                <button type="submit" id="btn-submit-checkin" class="flex-1 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold py-4 px-6 rounded-2xl transition shadow-lg shadow-emerald-950 flex items-center justify-center gap-2 text-base md:text-lg">
-                  <i data-lucide="check-circle" class="w-6 h-6"></i> Registrar Entrada
-                </button>
-                <button type="button" onclick="openNewClientModal()" class="bg-slate-950 hover:bg-slate-800 text-slate-200 px-5 py-4 rounded-2xl transition flex items-center gap-2 border border-slate-800 font-semibold text-sm">
-                  <i data-lucide="user-plus" class="w-5 h-5 text-emerald-400"></i> <span class="hidden sm:inline">Nuevo</span>
+              <div class="flex items-center justify-between text-xs pt-1">
+                <span class="font-semibold text-slate-700 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Próximas a vencer (≤ 3 días)
+                </span>
+                <span id="bar-label-porvencer" class="font-bold text-slate-700">0</span>
+              </div>
+              <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div id="bar-fill-porvencer" class="h-full bg-amber-500 rounded-full" style="width: 15%"></div>
+              </div>
+
+              <div class="flex items-center justify-between text-xs pt-1">
+                <span class="font-semibold text-slate-700 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Membresías vencidas
+                </span>
+                <span id="bar-label-vencidas" class="font-bold text-slate-700">0</span>
+              </div>
+              <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div id="bar-fill-vencidas" class="h-full bg-rose-500 rounded-full" style="width: 10%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Miembros recientes (Entradas de hoy) -->
+          <div class="lg:col-span-3 bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <i data-lucide="user-check" class="w-4 h-4 text-slate-600"></i>
+                <h3 class="font-bold text-sm text-slate-800">Miembros recientes</h3>
+              </div>
+              <button onclick="switchTab('checkin')" class="text-xs font-semibold text-[#1f8e55] hover:underline">Ver todos →</button>
+            </div>
+            <div id="dash-recent-attendances" class="flex-1 space-y-3 overflow-y-auto max-h-56 pr-1">
+              <p class="text-xs text-slate-400 text-center py-8">Cargando...</p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- FILA 3: LISTA DE MIEMBROS + SEGUIMIENTO INTELIGENTE WHATSAPP IA -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          
+          <!-- Tabla Lista de miembros (Idéntica al boceto) -->
+          <div class="lg:col-span-7 bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div class="flex items-center gap-2">
+                <i data-lucide="users" class="w-4 h-4 text-slate-700"></i>
+                <h3 class="font-bold text-sm text-slate-800">Lista de miembros</h3>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="relative">
+                  <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                  <input 
+                    type="text" 
+                    id="dash-member-search"
+                    oninput="renderDashboardMembers()"
+                    placeholder="Buscar miembro..." 
+                    class="bg-[#f3f6f8] rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-700 outline-none focus:bg-white border border-transparent focus:border-[#1f8e55]"
+                  />
+                </div>
+                <button onclick="openNewClientModal()" class="bg-[#1f8e55] hover:bg-[#187544] text-white text-xs font-semibold px-3.5 py-1.5 rounded-xl transition flex items-center gap-1 shadow-sm shrink-0">
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i> Nuevo miembro
                 </button>
               </div>
+            </div>
+
+            <!-- Píldoras de filtro Todos / Activos / Inactivos -->
+            <div class="flex items-center gap-2 mb-4">
+              <button onclick="setDashMemberFilter('ALL')" id="pill-filter-all" class="px-3 py-1 rounded-full text-xs font-semibold bg-[#1f8e55] text-white transition">
+                Todos (<span id="count-pill-all">0</span>)
+              </button>
+              <button onclick="setDashMemberFilter('ACTIVO')" id="pill-filter-active" class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                Activos (<span id="count-pill-active">0</span>)
+              </button>
+              <button onclick="setDashMemberFilter('INACTIVO')" id="pill-filter-inactive" class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                Inactivos (<span id="count-pill-inactive">0</span>)
+              </button>
+            </div>
+
+            <!-- Tabla de miembros -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="text-slate-400 border-b border-slate-100 font-semibold">
+                  <tr>
+                    <th class="pb-2.5 pl-1">Nombre</th>
+                    <th class="pb-2.5">Plan</th>
+                    <th class="pb-2.5">Estado</th>
+                    <th class="pb-2.5">Último acceso</th>
+                    <th class="pb-2.5 text-right pr-1">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="dash-members-tbody" class="divide-y divide-slate-100 text-slate-700">
+                  <tr><td colspan="5" class="text-center py-6 text-slate-400">Cargando miembros...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Alertas de Seguimiento Inteligente (WhatsApp + IA) -->
+          <div class="lg:col-span-5 bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="sparkles" class="w-4 h-4 text-[#1f8e55]"></i>
+                  <h3 class="font-bold text-sm text-slate-800">Seguimiento Inteligente (WhatsApp IA)</h3>
+                </div>
+                <button onclick="switchTab('whatsapp')" class="text-xs font-semibold text-[#1f8e55] hover:underline">Configurar QR →</button>
+              </div>
+              <p class="text-xs text-slate-500 mb-3">Detección automática de inactividad (≥ 5 días) y membresías por vencer (≤ 3 días):</p>
+
+              <div id="dash-wa-candidates" class="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                <p class="text-xs text-slate-400 text-center py-6">Analizando candidatos...</p>
+              </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span id="dash-wa-dot" class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+                <span id="dash-wa-status-label" class="font-medium text-slate-600">WhatsApp: Desconectado</span>
+              </div>
+              <button onclick="switchTab('whatsapp')" class="text-xs bg-[#e6f4ea] text-[#1f8e55] font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition">
+                Vincular / Ver Bot
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- FILA 4: INGRESOS MENSUALES + MEMBRESÍAS MÁS COMUNES + ÚLTIMOS PAGOS -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          
+          <!-- Ingresos del mes y balance -->
+          <div class="lg:col-span-4 bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <i data-lucide="trending-up" class="w-4 h-4 text-[#1f8e55]"></i>
+                <h3 class="font-bold text-sm text-slate-800">Ingresos mensuales</h3>
+              </div>
+              <div id="dash-bottom-month-income" class="text-2xl font-extrabold text-slate-900 mt-1">$ 0</div>
+              <p id="dash-bottom-net-sub" class="text-xs font-semibold text-[#1f8e55] mt-0.5">+ Balance neto positivo</p>
+            </div>
+
+            <!-- Gráfica de barras mensual -->
+            <div class="mt-4 pt-2">
+              <div class="flex items-end justify-between gap-2 h-28 px-1">
+                <div class="flex-1 flex flex-col items-center gap-1">
+                  <div class="w-full bg-[#345e4f]/70 rounded-t-md h-12"></div>
+                  <span class="text-[10px] text-slate-400">May</span>
+                </div>
+                <div class="flex-1 flex flex-col items-center gap-1">
+                  <div class="w-full bg-[#345e4f]/75 rounded-t-md h-16"></div>
+                  <span class="text-[10px] text-slate-400">Jun</span>
+                </div>
+                <div class="flex-1 flex flex-col items-center gap-1">
+                  <div class="w-full bg-[#345e4f]/80 rounded-t-md h-14"></div>
+                  <span class="text-[10px] text-slate-400">Jul</span>
+                </div>
+                <div class="flex-1 flex flex-col items-center gap-1">
+                  <div class="w-full bg-[#345e4f]/85 rounded-t-md h-20"></div>
+                  <span class="text-[10px] text-slate-400">Ago</span>
+                </div>
+                <div class="flex-1 flex flex-col items-center gap-1">
+                  <div class="w-full bg-[#345e4f]/90 rounded-t-md h-18"></div>
+                  <span class="text-[10px] text-slate-400">Sep</span>
+                </div>
+                <div class="flex-1 flex flex-col items-center gap-1">
+                  <div class="w-full bg-[#1f8e55] rounded-t-md h-24 shadow-sm"></div>
+                  <span class="text-[10px] font-bold text-slate-700">Oct</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Membresías más comunes (Donut Chart) -->
+          <div class="lg:col-span-4 bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between">
+            <div class="flex items-center gap-2 mb-2">
+              <i data-lucide="pie-chart" class="w-4 h-4 text-slate-700"></i>
+              <h3 class="font-bold text-sm text-slate-800">Membresías más comunes</h3>
+            </div>
+            <div id="dash-donut-container" class="flex items-center justify-around gap-4 my-auto py-2">
+              <!-- SVG Donut y leyenda inyectados por JS -->
+            </div>
+          </div>
+
+          <!-- Últimos pagos -->
+          <div class="lg:col-span-4 bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="receipt" class="w-4 h-4 text-slate-700"></i>
+                  <h3 class="font-bold text-sm text-slate-800">Últimos pagos</h3>
+                </div>
+                <button onclick="switchTab('finances')" class="text-xs font-semibold text-[#1f8e55] hover:underline">Ver todos →</button>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                  <thead class="text-slate-400 border-b border-slate-100">
+                    <tr>
+                      <th class="pb-2">Miembro</th>
+                      <th class="pb-2">Concepto</th>
+                      <th class="pb-2">Monto</th>
+                      <th class="pb-2 text-right">Fecha</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dash-recent-payments-tbody" class="divide-y divide-slate-100 text-slate-700">
+                    <tr><td colspan="4" class="text-center py-6 text-slate-400">Cargando...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- VISTA 2: ASISTENCIA / PUNTO DE ACCESO Y PORTERÍA -->
+      <!-- ========================================================================= -->
+      <section id="tab-checkin" class="tab-view hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          <div class="lg:col-span-7 bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-slate-100 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-xs font-bold uppercase tracking-wider text-[#1f8e55] bg-[#e6f4ea] px-3 py-1 rounded-full">
+                  Control de Acceso en Portería (Regla DP-003)
+                </span>
+                <span id="current-clock" class="text-sm font-mono font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-xl">--:--:--</span>
+              </div>
+
+              <h2 class="text-2xl font-extrabold text-slate-900 mb-1">Registro de Asistencia</h2>
+              <p class="text-slate-500 text-sm mb-6">Digita el número de documento del miembro. Si la membresía está vencida, el sistema bloqueará el ingreso automáticamente.</p>
+
+              <form id="form-checkin" onsubmit="handleCheckIn(event)" class="space-y-4">
+                <div class="relative">
+                  <i data-lucide="id-card" class="w-6 h-6 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+                  <input 
+                    type="text" 
+                    id="checkin-doc" 
+                    placeholder="Cédula o Documento del miembro..." 
+                    required
+                    autocomplete="off"
+                    class="w-full bg-[#f3f6f8] focus:bg-white border-2 border-slate-200 focus:border-[#1f8e55] rounded-2xl py-4 pl-14 pr-5 text-xl font-mono text-slate-900 outline-none transition"
+                  />
+                </div>
+                <div class="flex gap-3">
+                  <button type="submit" class="flex-1 bg-[#1f8e55] hover:bg-[#187544] text-white font-bold py-4 px-6 rounded-2xl transition shadow-md flex items-center justify-center gap-2 text-base">
+                    <i data-lucide="check-circle" class="w-5 h-5"></i> Registrar Entrada
+                  </button>
+                  <button type="button" onclick="openNewClientModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-5 py-4 rounded-2xl transition flex items-center gap-2 text-sm">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i> Nuevo Miembro
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div id="checkin-feedback" class="mt-6 hidden p-5 rounded-2xl border"></div>
+          </div>
+
+          <div class="lg:col-span-5 bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
+                <i data-lucide="clock" class="w-5 h-5 text-[#1f8e55]"></i> Historial de Entradas de Hoy
+              </h3>
+              <span id="today-count-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-[#e6f4ea] text-[#1f8e55]">0 entradas</span>
+            </div>
+            <div id="today-attendances-list" class="flex-1 overflow-y-auto max-h-[420px] space-y-2.5 pr-1"></div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- VISTA 3: DIRECTORIO COMPLETO DE MIEMBROS -->
+      <!-- ========================================================================= -->
+      <section id="tab-clients" class="tab-view hidden space-y-6">
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 class="text-xl font-extrabold text-slate-900">Directorio de Miembros</h2>
+              <p class="text-slate-500 text-xs">Administra la base de datos de clientes, consulta fichas e historial.</p>
+            </div>
+            <button onclick="openNewClientModal()" class="bg-[#1f8e55] hover:bg-[#187544] text-white font-semibold py-2.5 px-4 rounded-xl transition flex items-center gap-2 text-xs shadow-sm self-start sm:self-auto">
+              <i data-lucide="user-plus" class="w-4 h-4"></i> + Nuevo Miembro
+            </button>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-3 mb-5">
+            <div class="relative flex-1">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+              <input 
+                type="text" 
+                id="clients-search-input" 
+                oninput="filterClients()"
+                placeholder="Buscar por nombre, documento o WhatsApp..." 
+                class="w-full bg-[#f3f6f8] focus:bg-white border border-slate-200 focus:border-[#1f8e55] rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-800 outline-none transition"
+              />
+            </div>
+            <select id="clients-filter-status" onchange="filterClients()" class="bg-[#f3f6f8] border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-[#1f8e55]">
+              <option value="">Todos los estados</option>
+              <option value="ACTIVO">Activos</option>
+              <option value="INACTIVO">Inactivos</option>
+            </select>
+          </div>
+
+          <div class="overflow-x-auto rounded-xl border border-slate-100">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-100">
+                <tr>
+                  <th class="py-3 px-4">Miembro</th>
+                  <th class="py-3 px-4">Documento</th>
+                  <th class="py-3 px-4">WhatsApp</th>
+                  <th class="py-3 px-4">Plan Actual</th>
+                  <th class="py-3 px-4">Estado</th>
+                  <th class="py-3 px-4 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="clients-table-body" class="divide-y divide-slate-100 text-slate-700"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- VISTA 4: MEMBRESÍAS Y PLANES -->
+      <!-- ========================================================================= -->
+      <section id="tab-memberships" class="tab-view hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          <div class="lg:col-span-5 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h2 class="text-lg font-extrabold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="credit-card" class="w-5 h-5 text-[#1f8e55]"></i> Asignar o Renovar Membresía
+            </h2>
+            <p class="text-slate-500 text-xs mb-5">Si el miembro tiene vigencia activa, los días nuevos se suman al final de su fecha de vencimiento actual.</p>
+
+            <form id="form-assign-membership" onsubmit="handleAssignMembership(event)" class="space-y-4 text-sm">
+              <div>
+                <label class="block text-slate-700 font-semibold mb-1 text-xs">Seleccionar Miembro *</label>
+                <select id="assign-client-select" required onchange="handleSelectClientForPlan()" class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#1f8e55]">
+                  <option value="">Selecciona un miembro...</option>
+                </select>
+                <div id="assign-client-preview" class="mt-2 text-xs hidden p-3 bg-[#e6f4ea] text-[#15803d] rounded-xl border border-emerald-200"></div>
+              </div>
+
+              <div>
+                <label class="block text-slate-700 font-semibold mb-1 text-xs">Plan de Membresía *</label>
+                <select id="assign-plan-select" required onchange="handlePlanChange()" class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#1f8e55]">
+                  <option value="">Selecciona un plan...</option>
+                </select>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-slate-700 font-semibold mb-1 text-xs">Monto a Cobrar ($) *</label>
+                  <input type="number" id="assign-amount" required class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 font-mono font-bold outline-none focus:border-[#1f8e55]" />
+                </div>
+                <div>
+                  <label class="block text-slate-700 font-semibold mb-1 text-xs">Medio de Pago *</label>
+                  <select id="assign-payment-method" required class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none focus:border-[#1f8e55]">
+                    <option value="EFECTIVO">Efectivo</option>
+                    <option value="NEQUI">Nequi</option>
+                    <option value="DAVIPLATA">Daviplata</option>
+                    <option value="TRANSFERENCIA">Transferencia</option>
+                    <option value="TARJETA">Tarjeta</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-slate-700 font-semibold mb-1 text-xs">Referencia / Nota (Opcional)</label>
+                <input type="text" id="assign-reference" placeholder="Comprobante o nota..." class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none focus:border-[#1f8e55]" />
+              </div>
+
+              <button type="submit" class="w-full bg-[#1f8e55] hover:bg-[#187544] text-white font-bold py-3 rounded-xl transition shadow-md flex items-center justify-center gap-2">
+                <i data-lucide="check" class="w-4 h-4"></i> Registrar Pago y Activar Plan
+              </button>
             </form>
           </div>
 
-          <!-- Banner de Resultado / Alerta Visual en Tiempo Real -->
-          <div id="checkin-feedback" class="mt-8 hidden p-6 rounded-2xl border transition-all duration-300"></div>
-        </div>
-
-        <!-- Historial en vivo del día -->
-        <div class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl flex flex-col">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="font-bold text-base flex items-center gap-2 text-white">
-              <i data-lucide="history" class="w-4 h-4 text-emerald-400"></i> Entradas de Hoy
-            </h3>
-            <span id="today-count-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-950 text-slate-300 border border-slate-800 font-mono">
-              0 entradas
-            </span>
-          </div>
-
-          <div id="today-attendances-list" class="flex-1 overflow-y-auto max-h-[460px] space-y-2.5 pr-1">
-            <p class="text-slate-500 text-xs text-center py-10">Cargando registros...</p>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- ========================================== -->
-    <!-- 2. TAB: GESTIÓN DE CLIENTES -->
-    <!-- ========================================== -->
-    <section id="tab-clients" class="tab-view hidden space-y-6">
-      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div>
-            <h2 class="text-2xl font-bold tracking-tight">Directorio de Clientes</h2>
-            <p class="text-slate-400 text-sm">Consulta la ficha, historial y estados de cada socio.</p>
-          </div>
-          <button onclick="openNewClientModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-4 rounded-xl transition flex items-center gap-2 self-start md:self-auto shadow-md shadow-emerald-950 text-sm">
-            <i data-lucide="user-plus" class="w-4 h-4"></i> + Registrar Cliente
-          </button>
-        </div>
-
-        <!-- Buscador -->
-        <div class="flex flex-col sm:flex-row gap-3 mb-6">
-          <div class="relative flex-1">
-            <input 
-              type="text" 
-              id="clients-search-input" 
-              placeholder="Buscar por cédula, nombre o WhatsApp..." 
-              oninput="filterClients()"
-              class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 pl-10 text-white outline-none focus:border-emerald-500 text-sm transition"
-            />
-            <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"></i>
-          </div>
-          <select id="clients-filter-status" onchange="filterClients()" class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-300 outline-none focus:border-emerald-500 transition">
-            <option value="">Todos los estados</option>
-            <option value="ACTIVO">Solo Activos</option>
-            <option value="INACTIVO">Solo Inactivos</option>
-          </select>
-        </div>
-
-        <!-- Tabla de clientes -->
-        <div class="overflow-x-auto rounded-2xl border border-slate-800">
-          <table class="w-full text-left text-sm">
-            <thead class="bg-slate-950 text-slate-400 border-b border-slate-800 text-xs uppercase tracking-wider">
-              <tr>
-                <th class="py-3 px-4">Documento</th>
-                <th class="py-3 px-4">Nombre Completo</th>
-                <th class="py-3 px-4">WhatsApp</th>
-                <th class="py-3 px-4">Estado</th>
-                <th class="py-3 px-4">Registro</th>
-                <th class="py-3 px-4 text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="clients-table-body" class="divide-y divide-slate-800/60 bg-slate-900/50">
-              <tr><td colspan="6" class="text-center py-8 text-slate-500">Cargando clientes...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- ========================================== -->
-    <!-- 3. TAB: MEMBRESÍAS & PAGOS -->
-    <!-- ========================================== -->
-    <section id="tab-memberships" class="tab-view hidden space-y-6">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-        <!-- Formulario de Asignación / Renovación -->
-        <div class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl">
-          <h2 class="text-xl font-bold mb-1 flex items-center gap-2">
-            <i data-lucide="credit-card" class="w-5 h-5 text-emerald-400"></i> Asignar / Renovar Membresía
-          </h2>
-          <p class="text-slate-400 text-xs mb-6">Calcula la vigencia acumulada y registra el pago en caja automáticamente.</p>
-
-          <form id="form-assign-membership" onsubmit="handleAssignMembership(event)" class="space-y-4 text-sm">
-            <div>
-              <label class="block text-slate-300 font-medium mb-1">Seleccionar Cliente *</label>
-              <select id="assign-client-select" required onchange="handleSelectClientForPlan()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-emerald-500 transition">
-                <option value="">Selecciona un cliente...</option>
-              </select>
-              <div id="assign-client-preview" class="mt-2 text-xs text-slate-400 hidden p-2.5 bg-slate-950/60 rounded-xl border border-slate-800"></div>
-            </div>
-
-            <div>
-              <label class="block text-slate-300 font-medium mb-1">Plan de Membresía *</label>
-              <select id="assign-plan-select" required onchange="handlePlanChange()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-emerald-500 transition">
-                <option value="">Selecciona un plan...</option>
-              </select>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
+          <div class="lg:col-span-7 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
               <div>
-                <label class="block text-slate-300 font-medium mb-1">Valor a Cobrar ($) *</label>
-                <input type="number" id="assign-amount" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-emerald-500 transition" />
+                <h2 class="text-lg font-extrabold text-slate-900">Catálogo de Planes</h2>
+                <p class="text-slate-500 text-xs">Planes disponibles para asignación</p>
               </div>
-              <div>
-                <label class="block text-slate-300 font-medium mb-1">Medio de Pago *</label>
-                <select id="assign-payment-method" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500 transition">
-                  <option value="EFECTIVO">Efectivo</option>
-                  <option value="NEQUI">Nequi</option>
-                  <option value="DAVIPLATA">Daviplata</option>
-                  <option value="TRANSFERENCIA">Transferencia Bancaria</option>
-                  <option value="TARJETA">Tarjeta Débito/Crédito</option>
-                </select>
-              </div>
+              <button onclick="openModal('modal-new-plan')" class="bg-[#1f8e55] hover:bg-[#187544] text-white text-xs font-semibold py-2 px-3.5 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Crear Plan
+              </button>
             </div>
+            <div id="plans-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+          </div>
 
+        </div>
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- VISTA 5: PAGOS Y FINANZAS -->
+      <!-- ========================================================================= -->
+      <section id="tab-finances" class="tab-view hidden space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Total Ingresos</span>
+            <div id="fin-total-incomes" class="text-2xl lg:text-3xl font-extrabold text-[#1f8e55] mt-1">$ 0</div>
+            <p class="text-xs text-slate-400 mt-1">Membresías y ventas</p>
+          </div>
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Total Egresos / Gastos</span>
+            <div id="fin-total-expenses" class="text-2xl lg:text-3xl font-extrabold text-rose-600 mt-1">$ 0</div>
+            <p class="text-xs text-slate-400 mt-1">Pagos a entrenadores y gastos</p>
+          </div>
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Resultado Neto Administrativo</span>
+            <div id="fin-net-result" class="text-2xl lg:text-3xl font-extrabold text-slate-900 mt-1">$ 0</div>
+            <p class="text-xs text-slate-400 mt-1">Ingresos menos Egresos</p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
-              <label class="block text-slate-300 font-medium mb-1">Referencia / Comprobante (Opcional)</label>
-              <input type="text" id="assign-reference" placeholder="Ej: Nro de transacción..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500 transition" />
+              <h2 class="text-lg font-extrabold text-slate-900">Libro de Movimientos Financieros</h2>
+              <p class="text-slate-500 text-xs">Control unificado de ingresos, gastos operativos y nómina de entrenadores.</p>
             </div>
-
-            <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-300">
-              <i data-lucide="sparkles" class="w-4 h-4 inline mr-1"></i>
-              <strong>Regla DP-002:</strong> Si el socio tiene membresía activa, los días se suman al final de su vencimiento actual sin perder ningún día.
+            <div class="flex flex-wrap gap-2">
+              <button onclick="openModal('modal-new-expense')" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold py-2 px-3.5 rounded-xl transition flex items-center gap-1.5">
+                <i data-lucide="minus-circle" class="w-4 h-4"></i> Registrar Gasto
+              </button>
+              <button onclick="openModal('modal-coach-payment')" class="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-semibold py-2 px-3.5 rounded-xl transition flex items-center gap-1.5">
+                <i data-lucide="user-check" class="w-4 h-4"></i> Pago a Entrenador
+              </button>
+              <button onclick="openModal('modal-new-income')" class="bg-[#e6f4ea] hover:bg-emerald-100 text-[#1f8e55] border border-emerald-200 text-xs font-semibold py-2 px-3.5 rounded-xl transition flex items-center gap-1.5">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> Otro Ingreso
+              </button>
             </div>
+          </div>
 
-            <button type="submit" id="btn-submit-membership" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-950 flex items-center justify-center gap-2">
-              <i data-lucide="check" class="w-4 h-4"></i> Guardar Pago y Asignar
-            </button>
-          </form>
+          <div class="overflow-x-auto rounded-xl border border-slate-100">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-100">
+                <tr>
+                  <th class="py-3 px-4">Fecha</th>
+                  <th class="py-3 px-4">Tipo</th>
+                  <th class="py-3 px-4">Categoría</th>
+                  <th class="py-3 px-4">Concepto</th>
+                  <th class="py-3 px-4 text-right">Valor</th>
+                </tr>
+              </thead>
+              <tbody id="finances-table-body" class="divide-y divide-slate-100 text-slate-700"></tbody>
+            </table>
+          </div>
         </div>
+      </section>
 
-        <!-- Catálogo de Planes Disponibles -->
-        <div class="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl">
-          <div class="flex items-center justify-between mb-4">
+      <!-- ========================================================================= -->
+      <!-- VISTA 6: WHATSAPP BOT (BAILEYS + GEMINI IA) -->
+      <!-- ========================================================================= -->
+      <section id="tab-whatsapp" class="tab-view hidden space-y-6">
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h2 class="text-xl font-bold tracking-tight">Catálogo de Planes</h2>
-              <p class="text-slate-400 text-xs">Tarifas configuradas para los socios</p>
-            </div>
-            <button onclick="openModal('modal-new-plan')" class="bg-slate-950 hover:bg-slate-800 text-xs font-semibold py-2 px-3 rounded-xl border border-slate-800 text-slate-200 transition flex items-center gap-1.5">
-              <i data-lucide="plus" class="w-3.5 h-3.5 text-emerald-400"></i> Nuevo Plan
-            </button>
-          </div>
-
-          <div id="plans-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <p class="text-slate-500 text-sm">Cargando catálogo...</p>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- ========================================== -->
-    <!-- 4. TAB: FINANZAS Y CAJA -->
-    <!-- ========================================== -->
-    <section id="tab-finances" class="tab-view hidden space-y-6">
-      
-      <!-- Resumen KPIs Financieros -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
-          <div class="flex items-center justify-between text-xs text-slate-400 uppercase font-semibold mb-2">
-            <span>Ingresos Registrados</span>
-            <div class="p-2 bg-emerald-500/10 rounded-xl text-emerald-400"><i data-lucide="trending-up" class="w-4 h-4"></i></div>
-          </div>
-          <div id="fin-total-incomes" class="text-2xl lg:text-3xl font-extrabold text-emerald-400 font-mono">$0</div>
-          <p class="text-xs text-slate-500 mt-1">Membresías y otros ingresos</p>
-        </div>
-
-        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
-          <div class="flex items-center justify-between text-xs text-slate-400 uppercase font-semibold mb-2">
-            <span>Egresos / Gastos</span>
-            <div class="p-2 bg-rose-500/10 rounded-xl text-rose-400"><i data-lucide="trending-down" class="w-4 h-4"></i></div>
-          </div>
-          <div id="fin-total-expenses" class="text-2xl lg:text-3xl font-extrabold text-rose-400 font-mono">$0</div>
-          <p class="text-xs text-slate-500 mt-1">Entrenadores, arriendo, servicios</p>
-        </div>
-
-        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
-          <div class="flex items-center justify-between text-xs text-slate-400 uppercase font-semibold mb-2">
-            <span>Resultado Neto (Caja)</span>
-            <div class="p-2 bg-blue-500/10 rounded-xl text-blue-400"><i data-lucide="scale" class="w-4 h-4"></i></div>
-          </div>
-          <div id="fin-net-result" class="text-2xl lg:text-3xl font-extrabold text-white font-mono">$0</div>
-          <p class="text-xs text-slate-500 mt-1">Ingresos menos Egresos</p>
-        </div>
-      </div>
-
-      <!-- Acciones de Registro & Movimientos -->
-      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h2 class="text-xl font-bold tracking-tight">Movimientos de Caja</h2>
-            <p class="text-slate-400 text-xs">Historial detallado con categorización</p>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <button onclick="openModal('modal-new-expense')" class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-semibold py-2 px-3.5 rounded-xl transition flex items-center gap-1.5">
-              <i data-lucide="minus-circle" class="w-4 h-4"></i> Registrar Gasto
-            </button>
-            <button onclick="openModal('modal-coach-payment')" class="bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-semibold py-2 px-3.5 rounded-xl transition flex items-center gap-1.5">
-              <i data-lucide="user-check" class="w-4 h-4"></i> Pago a Entrenador
-            </button>
-            <button onclick="openModal('modal-new-income')" class="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold py-2 px-3.5 rounded-xl transition flex items-center gap-1.5">
-              <i data-lucide="plus-circle" class="w-4 h-4"></i> Otro Ingreso
-            </button>
-          </div>
-        </div>
-
-        <div class="overflow-x-auto rounded-2xl border border-slate-800">
-          <table class="w-full text-left text-sm">
-            <thead class="bg-slate-950 text-slate-400 border-b border-slate-800 text-xs uppercase tracking-wider">
-              <tr>
-                <th class="py-3 px-4">Fecha</th>
-                <th class="py-3 px-4">Tipo</th>
-                <th class="py-3 px-4">Categoría</th>
-                <th class="py-3 px-4">Concepto</th>
-                <th class="py-3 px-4 text-right">Monto</th>
-              </tr>
-            </thead>
-            <tbody id="finances-table-body" class="divide-y divide-slate-800/60 bg-slate-900/50">
-              <tr><td colspan="5" class="text-center py-8 text-slate-500">Cargando movimientos...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- ========================================== -->
-    <!-- 5. TAB: WHATSAPP BOT & SEGUIMIENTO IA -->
-    <!-- ========================================== -->
-    <section id="tab-whatsapp" class="tab-view hidden space-y-6">
-      
-      <!-- Estado de Baileys / QR -->
-      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <div class="flex items-center gap-2 mb-2">
-              <span class="text-[11px] uppercase tracking-wider font-bold text-emerald-400 bg-emerald-500/10 px-3 py-0.5 rounded-full border border-emerald-500/20">
-                Baileys Open-Source + Gemini IA
+              <span class="text-[11px] font-bold uppercase tracking-wider text-[#1f8e55] bg-[#e6f4ea] px-3 py-1 rounded-full">
+                Automatización Baileys + Gemini IA
               </span>
+              <h2 class="text-xl font-extrabold text-slate-900 mt-2">Vinculación de WhatsApp del Gimnasio</h2>
+              <p class="text-slate-500 text-sm max-w-2xl">
+                Escanea el código QR para conectar el WhatsApp del gimnasio sin costo por mensaje. La IA redacta recordatorios de vencimiento y mensajes motivacionales para miembros inactivos.
+              </p>
             </div>
-            <h2 class="text-2xl font-bold tracking-tight">Conexión de WhatsApp</h2>
-            <p class="text-slate-400 text-sm max-w-xl">
-              Escanea el código QR con el celular del gimnasio. El sistema detecta socios inactivos ($\ge 5$ días) y vencimientos ($\le 3$ días) y redacta mensajes personalizados con IA.
-            </p>
+            <div class="flex items-center gap-3 shrink-0">
+              <button id="btn-wa-connect" onclick="connectWhatsApp()" class="bg-[#1f8e55] hover:bg-[#187544] text-white font-semibold py-2.5 px-5 rounded-xl transition flex items-center gap-2 text-sm shadow-sm">
+                <i data-lucide="qr-code" class="w-4 h-4"></i> Generar Código QR
+              </button>
+              <button id="btn-wa-disconnect" onclick="confirmDisconnectWhatsApp()" class="hidden bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold py-2.5 px-4 rounded-xl transition flex items-center gap-2 text-sm">
+                <i data-lucide="power" class="w-4 h-4"></i> Desvincular
+              </button>
+            </div>
           </div>
 
-          <div class="flex items-center gap-3">
-            <button id="btn-wa-connect" onclick="connectWhatsApp()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-emerald-950 text-sm">
-              <i data-lucide="qr-code" class="w-4 h-4"></i> Vincular / Generar QR
+          <!-- Visor QR -->
+          <div id="wa-qr-container" class="mt-6 hidden flex flex-col items-center justify-center p-8 bg-[#f3f6f8] rounded-2xl border border-slate-200">
+            <p class="text-sm font-bold text-[#1f8e55] mb-4">Escanea este código QR desde el WhatsApp del gimnasio:</p>
+            <div class="p-4 bg-white rounded-2xl shadow-lg border border-slate-100">
+              <img id="wa-qr-image" src="" alt="QR WhatsApp" class="w-64 h-64 object-contain" />
+            </div>
+            <p class="text-xs text-slate-500 mt-3">Abre WhatsApp > Dispositivos vinculados > Vincular un dispositivo</p>
+          </div>
+
+          <!-- Estado Conectado -->
+          <div id="wa-connected-container" class="mt-6 hidden p-5 bg-[#e6f4ea] border border-emerald-200 rounded-2xl flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-[#1f8e55] text-white flex items-center justify-center shrink-0">
+              <i data-lucide="check-check" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-[#15803d] text-base">WhatsApp Conectado y Operativo</h4>
+              <p id="wa-connected-phone" class="text-xs text-emerald-800">Listo para enviar mensajes automáticos.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-extrabold text-base text-slate-900 flex items-center gap-2">
+                <i data-lucide="sparkles" class="w-5 h-5 text-[#1f8e55]"></i> Bandeja de Mensajes Sugeridos por IA
+              </h3>
+              <p class="text-xs text-slate-500">Miembros detectados hoy por inactividad (≥ 5 días) o vencimiento próximo (≤ 3 días).</p>
+            </div>
+            <button onclick="loadWhatsAppCandidates()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Recargar
             </button>
-            <button id="btn-wa-disconnect" onclick="confirmDisconnectWhatsApp()" class="hidden bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 font-semibold py-2.5 px-4 rounded-xl transition flex items-center gap-2 text-sm">
-              <i data-lucide="power" class="w-4 h-4"></i> Desconectar
-            </button>
+          </div>
+          <div id="wa-candidates-list" class="space-y-3"></div>
+        </div>
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- VISTA 7: CONFIGURACIÓN DE REGLAS Y SISTEMA -->
+      <!-- ========================================================================= -->
+      <section id="tab-config" class="tab-view hidden space-y-6">
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 max-w-2xl">
+          <h2 class="text-xl font-extrabold text-slate-900 mb-1">Configuración de Reglas de Negocio</h2>
+          <p class="text-xs text-slate-500 mb-6">Parámetros activos de la Fase 1 conforme al documento ERS v2.0.</p>
+
+          <div class="space-y-4 text-sm">
+            <div class="p-4 rounded-xl bg-[#f3f6f8] border border-slate-200/80 flex items-center justify-between">
+              <div>
+                <h4 class="font-bold text-slate-800">Bloqueo en Portería por Membresía Vencida (DP-003)</h4>
+                <p class="text-xs text-slate-500">Impide registrar asistencia si la membresía expiró, salvo autorización manual auditada.</p>
+              </div>
+              <span class="px-3 py-1 rounded-full text-xs font-bold bg-[#dcfce7] text-[#15803d]">ACTIVO</span>
+            </div>
+
+            <div class="p-4 rounded-xl bg-[#f3f6f8] border border-slate-200/80 flex items-center justify-between">
+              <div>
+                <h4 class="font-bold text-slate-800">Acumulación de Días en Renovación (DP-002)</h4>
+                <p class="text-xs text-slate-500">Suma los días del nuevo plan al vencimiento actual cuando el miembro renueva anticipadamente.</p>
+              </div>
+              <span class="px-3 py-1 rounded-full text-xs font-bold bg-[#dcfce7] text-[#15803d]">ACTIVO</span>
+            </div>
+
+            <div class="p-4 rounded-xl bg-[#f3f6f8] border border-slate-200/80 flex items-center justify-between">
+              <div>
+                <h4 class="font-bold text-slate-800">Umbral de Inactividad para Seguimiento IA (RF-031)</h4>
+                <p class="text-xs text-slate-500">Detecta miembros con membresía vigente que llevan 5 o más días sin asistir.</p>
+              </div>
+              <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-200 text-slate-700 font-mono">5 Días</span>
+            </div>
+
+            <div class="p-4 rounded-xl bg-[#f3f6f8] border border-slate-200/80 flex items-center justify-between">
+              <div>
+                <h4 class="font-bold text-slate-800">Aviso Anticipado de Vencimiento (RF-032)</h4>
+                <p class="text-xs text-slate-500">Prepara recordatorio por WhatsApp 3 días antes de vencer el plan.</p>
+              </div>
+              <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-200 text-slate-700 font-mono">3 Días</span>
+            </div>
           </div>
         </div>
+      </section>
 
-        <!-- Contenedor del QR Code -->
-        <div id="wa-qr-container" class="mt-6 hidden flex flex-col items-center justify-center p-8 bg-slate-950 rounded-2xl border border-slate-800">
-          <p class="text-sm font-semibold text-emerald-400 mb-4 animate-pulse">Escanea este código con WhatsApp en tu celular:</p>
-          <div class="p-4 bg-white rounded-2xl shadow-2xl">
-            <img id="wa-qr-image" src="" alt="Código QR WhatsApp" class="w-64 h-64 object-contain" />
-          </div>
-          <p class="text-xs text-slate-500 mt-4">Abre WhatsApp > Dispositivos vinculados > Vincular un dispositivo</p>
-        </div>
-
-        <!-- Contenedor Conectado -->
-        <div id="wa-connected-container" class="mt-6 hidden p-6 bg-emerald-950/20 border border-emerald-500/30 rounded-2xl flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-            <i data-lucide="check-check" class="w-7 h-7"></i>
-          </div>
-          <div>
-            <h4 class="font-bold text-emerald-300 text-base">WhatsApp Vinculado y Activo</h4>
-            <p id="wa-connected-phone" class="text-xs text-slate-400">Listo para enviar mensajes de seguimiento.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Candidatos Detectados por Reglas e IA -->
-      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h3 class="text-lg font-bold flex items-center gap-2 text-white">
-              <i data-lucide="sparkles" class="w-5 h-5 text-purple-400"></i> Seguimiento Inteligente (Hoy)
-            </h3>
-            <p class="text-slate-400 text-xs">Candidatos detectados según reglas de inactividad o vencimiento próximo.</p>
-          </div>
-          <button onclick="loadWhatsAppCandidates()" class="text-xs bg-slate-950 hover:bg-slate-800 text-slate-300 px-3 py-1.5 rounded-xl border border-slate-800 transition flex items-center gap-1.5">
-            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Actualizar
-          </button>
-        </div>
-
-        <div id="wa-candidates-list" class="space-y-3">
-          <p class="text-slate-500 text-sm py-4">Buscando clientes que requieran seguimiento...</p>
-        </div>
-      </div>
-
-    </section>
-
-    <!-- ========================================== -->
-    <!-- 6. TAB: PANEL ADMINISTRATIVO (KPIS) -->
-    <!-- ========================================== -->
-    <section id="tab-dashboard" class="tab-view hidden space-y-6">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl">
-          <div class="flex items-center justify-between text-xs text-slate-400 uppercase font-semibold mb-2">
-            <span>Clientes Registrados</span>
-            <i data-lucide="users" class="w-4 h-4 text-emerald-400"></i>
-          </div>
-          <div id="dash-total-clients" class="text-3xl font-extrabold text-white">0</div>
-          <p id="dash-active-clients" class="text-xs text-emerald-400 mt-1">0 activos</p>
-        </div>
-
-        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl">
-          <div class="flex items-center justify-between text-xs text-slate-400 uppercase font-semibold mb-2">
-            <span>Membresías Vigentes</span>
-            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
-          </div>
-          <div id="dash-active-memberships" class="text-3xl font-extrabold text-emerald-400">0</div>
-          <p id="dash-expiring-memberships" class="text-xs text-amber-400 mt-1">0 por vencer (< 3 días)</p>
-        </div>
-
-        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl">
-          <div class="flex items-center justify-between text-xs text-slate-400 uppercase font-semibold mb-2">
-            <span>Asistencias Hoy</span>
-            <i data-lucide="flame" class="w-4 h-4 text-orange-400"></i>
-          </div>
-          <div id="dash-today-attendances" class="text-3xl font-extrabold text-white">0</div>
-          <p id="dash-month-attendances" class="text-xs text-slate-400 mt-1">0 este mes</p>
-        </div>
-
-        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl">
-          <div class="flex items-center justify-between text-xs text-slate-400 uppercase font-semibold mb-2">
-            <span>Balance Neto Mes</span>
-            <i data-lucide="dollar-sign" class="w-4 h-4 text-blue-400"></i>
-          </div>
-          <div id="dash-net-finances" class="text-3xl font-extrabold text-blue-400 font-mono">$0</div>
-          <p class="text-xs text-slate-400 mt-1">Caja neta del mes</p>
-        </div>
-
-      </div>
-
-      <!-- Resumen de Estado de Membresías -->
-      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl">
-        <h3 class="text-lg font-bold mb-4 tracking-tight">Estado General de Socios</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-          <div class="p-5 bg-emerald-950/20 border border-emerald-500/30 rounded-2xl">
-            <span class="text-xs text-emerald-400 font-bold uppercase tracking-wider">Vigentes</span>
-            <div id="dash-kpi-vigentes" class="text-3xl font-extrabold text-white mt-1">0</div>
-          </div>
-          <div class="p-5 bg-amber-950/20 border border-amber-500/30 rounded-2xl">
-            <span class="text-xs text-amber-400 font-bold uppercase tracking-wider">Próximas a Vencer</span>
-            <div id="dash-kpi-porvencer" class="text-3xl font-extrabold text-white mt-1">0</div>
-          </div>
-          <div class="p-5 bg-rose-950/20 border border-rose-500/30 rounded-2xl">
-            <span class="text-xs text-rose-400 font-bold uppercase tracking-wider">Vencidas</span>
-            <div id="dash-kpi-vencidas" class="text-3xl font-extrabold text-white mt-1">0</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-  </main>
+    </main>
+  </div>
 
   <!-- ========================================== -->
-  <!-- MODALES DEL SISTEMA -->
+  <!-- MODALES DEL SISTEMA (ESTILO CLARO FITZONE) -->
   <!-- ========================================== -->
 
-  <!-- MODAL: NUEVO CLIENTE (DP-001) -->
-  <div id="modal-new-client" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl">
+  <!-- MODAL: NUEVO MIEMBRO -->
+  <div id="modal-new-client" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-bold text-white flex items-center gap-2">
-          <i data-lucide="user-plus" class="w-5 h-5 text-emerald-400"></i> Registrar Nuevo Cliente
+        <h3 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+          <i data-lucide="user-plus" class="w-5 h-5 text-[#1f8e55]"></i> Registrar Nuevo Miembro
         </h3>
-        <button onclick="closeModal('modal-new-client')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button onclick="closeModal('modal-new-client')" class="text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
       <form onsubmit="handleCreateClient(event)" class="space-y-4 text-sm">
         <div>
-          <label class="block text-slate-300 font-medium mb-1">Cédula / Documento *</label>
-          <input type="text" id="new-client-doc" required placeholder="Ej: 1020304050" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-emerald-500 transition" />
+          <label class="block text-slate-700 font-semibold mb-1 text-xs">Cédula / Documento *</label>
+          <input type="text" id="new-client-doc" required placeholder="Ej: 1020304050" class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-mono outline-none focus:bg-white focus:border-[#1f8e55]" />
         </div>
         <div>
-          <label class="block text-slate-300 font-medium mb-1">Nombre Completo *</label>
-          <input type="text" id="new-client-name" required placeholder="Ej: Marcela Restrepo" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-emerald-500 transition" />
+          <label class="block text-slate-700 font-semibold mb-1 text-xs">Nombre Completo *</label>
+          <input type="text" id="new-client-name" required placeholder="Ej: Carlos Martínez" class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 outline-none focus:bg-white focus:border-[#1f8e55]" />
         </div>
         <div>
-          <label class="block text-slate-300 font-medium mb-1">Teléfono Móvil (WhatsApp) *</label>
-          <input type="tel" id="new-client-phone" required placeholder="Ej: 3101234567" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-emerald-500 transition" />
+          <label class="block text-slate-700 font-semibold mb-1 text-xs">Teléfono Móvil (WhatsApp) *</label>
+          <input type="tel" id="new-client-phone" required placeholder="Ej: 3101234567" class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-mono outline-none focus:bg-white focus:border-[#1f8e55]" />
         </div>
         <div>
-          <label class="block text-slate-300 font-medium mb-1">Notas / Observaciones</label>
-          <input type="text" id="new-client-notes" placeholder="Opcional..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-emerald-500 transition" />
+          <label class="block text-slate-700 font-semibold mb-1 text-xs">Observaciones (Opcional)</label>
+          <input type="text" id="new-client-notes" placeholder="Notas..." class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 outline-none focus:bg-white focus:border-[#1f8e55]" />
         </div>
         <div class="flex gap-2 pt-2">
-          <button type="button" onclick="closeModal('modal-new-client')" class="flex-1 bg-slate-950 hover:bg-slate-800 py-2.5 rounded-xl font-medium transition text-slate-300 border border-slate-800">Cancelar</button>
-          <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl font-bold text-white transition shadow-md shadow-emerald-950">Guardar</button>
+          <button type="button" onclick="closeModal('modal-new-client')" class="flex-1 bg-slate-100 hover:bg-slate-200 py-2.5 rounded-xl font-semibold text-slate-600 transition">Cancelar</button>
+          <button type="submit" class="flex-1 bg-[#1f8e55] hover:bg-[#187544] py-2.5 rounded-xl font-bold text-white transition shadow-sm">Guardar Miembro</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- MODAL: CREAR PLAN DE MEMBRESÍA -->
-  <div id="modal-new-plan" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl">
+  <!-- MODAL: CREAR PLAN -->
+  <div id="modal-new-plan" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-bold text-white flex items-center gap-2">
-          <i data-lucide="tag" class="w-5 h-5 text-emerald-400"></i> Crear Nuevo Plan
+        <h3 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+          <i data-lucide="tag" class="w-5 h-5 text-[#1f8e55]"></i> Nuevo Plan de Membresía
         </h3>
-        <button onclick="closeModal('modal-new-plan')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button onclick="closeModal('modal-new-plan')" class="text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
       <form onsubmit="handleCreatePlan(event)" class="space-y-4 text-sm">
         <div>
-          <label class="block text-slate-300 font-medium mb-1">Nombre del Plan *</label>
-          <input type="text" id="new-plan-name" required placeholder="Ej: Plan Pareja / Semestral" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-emerald-500 transition" />
+          <label class="block text-slate-700 font-semibold mb-1 text-xs">Nombre del Plan *</label>
+          <input type="text" id="new-plan-name" required placeholder="Ej: Plan Parejas" class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 outline-none focus:bg-white focus:border-[#1f8e55]" />
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-slate-300 font-medium mb-1">Duración (Días) *</label>
-            <input type="number" id="new-plan-days" required min="1" placeholder="30" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-emerald-500 transition" />
+            <label class="block text-slate-700 font-semibold mb-1 text-xs">Duración (Días) *</label>
+            <input type="number" id="new-plan-days" required min="1" placeholder="30" class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-mono outline-none focus:bg-white focus:border-[#1f8e55]" />
           </div>
           <div>
-            <label class="block text-slate-300 font-medium mb-1">Precio ($ COP) *</label>
-            <input type="number" id="new-plan-price" required min="1000" placeholder="90000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-emerald-500 transition" />
+            <label class="block text-slate-700 font-semibold mb-1 text-xs">Precio ($ COP) *</label>
+            <input type="number" id="new-plan-price" required min="1000" placeholder="100000" class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-mono outline-none focus:bg-white focus:border-[#1f8e55]" />
           </div>
         </div>
         <div>
-          <label class="block text-slate-300 font-medium mb-1">Descripción</label>
-          <input type="text" id="new-plan-desc" placeholder="Detalles de acceso..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-emerald-500 transition" />
+          <label class="block text-slate-700 font-semibold mb-1 text-xs">Descripción</label>
+          <input type="text" id="new-plan-desc" placeholder="Beneficios del plan..." class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 outline-none focus:bg-white focus:border-[#1f8e55]" />
         </div>
         <div class="flex gap-2 pt-2">
-          <button type="button" onclick="closeModal('modal-new-plan')" class="flex-1 bg-slate-950 hover:bg-slate-800 py-2.5 rounded-xl font-medium transition text-slate-300 border border-slate-800">Cancelar</button>
-          <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl font-bold text-white transition shadow-md shadow-emerald-950">Crear Plan</button>
+          <button type="button" onclick="closeModal('modal-new-plan')" class="flex-1 bg-slate-100 hover:bg-slate-200 py-2.5 rounded-xl font-semibold text-slate-600 transition">Cancelar</button>
+          <button type="submit" class="flex-1 bg-[#1f8e55] hover:bg-[#187544] py-2.5 rounded-xl font-bold text-white transition shadow-sm">Crear Plan</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- MODAL: AUTORIZAR EXCEPCIÓN MANUAL (DP-003) -->
-  <div id="modal-override-checkin" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-rose-500/40 rounded-3xl p-6 max-w-md w-full shadow-2xl">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-bold text-rose-400 flex items-center gap-2">
+  <!-- MODAL: EXCEPCIÓN MANUAL DE ASISTENCIA -->
+  <div id="modal-override-checkin" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-rose-200">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-extrabold text-rose-600 flex items-center gap-2">
           <i data-lucide="unlock" class="w-5 h-5"></i> Autorizar Excepción de Ingreso
         </h3>
-        <button onclick="closeModal('modal-override-checkin')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button onclick="closeModal('modal-override-checkin')" class="text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
-      <p class="text-slate-300 text-xs mb-4">
-        El cliente tiene la membresía vencida o no registrada. Registra la justificación que quedará en la bitácora de auditoría.
-      </p>
-
-      <!-- Presets rápidos -->
+      <p class="text-xs text-slate-500 mb-3">El miembro tiene la membresía vencida. Selecciona o escribe el motivo de autorización para el registro de auditoría:</p>
       <div class="flex flex-wrap gap-1.5 mb-3">
-        <button type="button" onclick="setOverridePreset('Pago en proceso')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-lg border border-slate-700">Pago en proceso</button>
-        <button type="button" onclick="setOverridePreset('Cortesía de administración')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-lg border border-slate-700">Cortesía</button>
-        <button type="button" onclick="setOverridePreset('Olvido de celular / Pago pendiente')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-lg border border-slate-700">Transferencia pendiente</button>
+        <button type="button" onclick="setOverridePreset('Pago en proceso')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium">Pago en proceso</button>
+        <button type="button" onclick="setOverridePreset('Cortesía autorizada')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium">Cortesía</button>
+        <button type="button" onclick="setOverridePreset('Compromiso de pago hoy')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium">Paga al salir</button>
       </div>
-
-      <textarea id="override-reason-input" rows="3" placeholder="Escribe el motivo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm outline-none focus:border-rose-500 transition mb-4"></textarea>
-
+      <textarea id="override-reason-input" rows="3" placeholder="Motivo de autorización..." class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl p-3 text-slate-800 text-sm outline-none focus:bg-white focus:border-rose-500 mb-4"></textarea>
       <div class="flex gap-2">
-        <button type="button" onclick="closeModal('modal-override-checkin')" class="flex-1 bg-slate-950 hover:bg-slate-800 py-2.5 rounded-xl font-medium transition text-slate-300 border border-slate-800">Cancelar</button>
-        <button type="button" onclick="confirmOverrideCheckIn()" class="flex-1 bg-rose-600 hover:bg-rose-500 py-2.5 rounded-xl font-bold text-white transition shadow-md shadow-rose-950">Autorizar Ingreso</button>
+        <button type="button" onclick="closeModal('modal-override-checkin')" class="flex-1 bg-slate-100 hover:bg-slate-200 py-2.5 rounded-xl font-semibold text-slate-600 transition">Cancelar</button>
+        <button type="button" onclick="confirmOverrideCheckIn()" class="flex-1 bg-rose-600 hover:bg-rose-700 py-2.5 rounded-xl font-bold text-white transition shadow-sm">Autorizar Paso</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: FICHA 360° DE CLIENTE -->
-  <div id="modal-client-detail" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
-      <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+  <!-- MODAL: FICHA 360° DE MIEMBRO -->
+  <div id="modal-client-detail" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-2xl w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
         <div>
-          <h3 id="detail-client-name" class="text-xl font-bold text-white">Nombre Cliente</h3>
-          <p id="detail-client-meta" class="text-xs text-slate-400 font-mono">CC: ... | Tel: ...</p>
+          <h3 id="detail-client-name" class="text-xl font-extrabold text-slate-900">Nombre Miembro</h3>
+          <p id="detail-client-meta" class="text-xs text-slate-500 font-mono">CC: ... | Tel: ...</p>
         </div>
-        <button onclick="closeModal('modal-client-detail')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button onclick="closeModal('modal-client-detail')" class="text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
-
-      <!-- Estado de Membresía Actual -->
-      <div id="detail-membership-banner" class="mb-6 p-4 rounded-2xl border"></div>
-
-      <!-- Tabs secundarias en la ficha -->
+      <div id="detail-membership-banner" class="mb-5 p-4 rounded-xl border"></div>
       <div class="space-y-4">
-        <h4 class="font-bold text-xs text-slate-300 uppercase tracking-wider">Historial de Pagos y Membresías</h4>
+        <h4 class="font-bold text-xs text-slate-400 uppercase tracking-wider">Historial de Pagos y Membresías</h4>
         <div id="detail-payments-list" class="space-y-2 max-h-40 overflow-y-auto text-xs"></div>
-
-        <h4 class="font-bold text-xs text-slate-300 uppercase tracking-wider pt-2">Historial de Asistencias</h4>
+        <h4 class="font-bold text-xs text-slate-400 uppercase tracking-wider pt-2">Últimas Asistencias</h4>
         <div id="detail-attendances-list" class="space-y-2 max-h-40 overflow-y-auto text-xs"></div>
       </div>
     </div>
   </div>
 
   <!-- MODAL: REGISTRAR GASTO -->
-  <div id="modal-new-expense" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl">
+  <div id="modal-new-expense" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-bold text-rose-400 flex items-center gap-2">
-          <i data-lucide="minus-circle" class="w-5 h-5"></i> Registrar Gasto / Compra
+        <h3 class="text-lg font-extrabold text-rose-600 flex items-center gap-2">
+          <i data-lucide="minus-circle" class="w-5 h-5"></i> Registrar Gasto / Egreso
         </h3>
-        <button onclick="closeModal('modal-new-expense')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button onclick="closeModal('modal-new-expense')" class="text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
       <form onsubmit="handleCreateExpense(event)" class="space-y-4 text-sm">
         <div>
-          <label class="block text-slate-300 font-medium mb-1">Categoría *</label>
-          <select id="expense-category" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-rose-500 transition"></select>
+          <label class="block text-slate-700 font-semibold mb-1 text-xs">Categoría *</label>
+          <select id="expense-category" required class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-800 outline-none"></select>
         </div>
         <div>
-          <label class="block text-slate-300 font-medium mb-1">Concepto / Detalle *</label>
-          <input type="text" id="expense-concept" required placeholder="Ej: Recibo de energía eléctrica..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-rose-500 transition" />
+          <label class="block text-slate-700 font-semibold mb-1 text-xs">Concepto / Detalle *</label>
+          <input type="text" id="expense-concept" required placeholder="Ej: Compra de implementos..." class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 outline-none" />
         </div>
         <div>
-          <label class="block text-slate-300 font-medium mb-1">Valor ($ COP) *</label>
-          <input type="number" id="expense-amount" required min="100" placeholder="Ej: 150000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-rose-500 transition" />
+          <label class="block text-slate-700 font-semibold mb-1 text-xs">Valor ($ COP) *</label>
+          <input type="number" id="expense-amount" required min="100" class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-mono outline-none" />
         </div>
         <div class="flex gap-2 pt-2">
-          <button type="button" onclick="closeModal('modal-new-expense')" class="flex-1 bg-slate-950 hover:bg-slate-800 py-2.5 rounded-xl font-medium transition text-slate-300 border border-slate-800">Cancelar</button>
-          <button type="submit" class="flex-1 bg-rose-600 hover:bg-rose-500 py-2.5 rounded-xl font-bold text-white transition shadow-md shadow-rose-950">Guardar Gasto</button>
+          <button type="button" onclick="closeModal('modal-new-expense')" class="flex-1 bg-slate-100 hover:bg-slate-200 py-2.5 rounded-xl font-semibold text-slate-600 transition">Cancelar</button>
+          <button type="submit" class="flex-1 bg-rose-600 hover:bg-rose-700 py-2.5 rounded-xl font-bold text-white transition">Guardar Gasto</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- MODAL: OTRO INGRESO -->
-  <div id="modal-new-income" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl">
+  <div id="modal-new-income" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-bold text-emerald-400 flex items-center gap-2">
-          <i data-lucide="plus-circle" class="w-5 h-5"></i> Registrar Ingreso Extra
+        <h3 class="text-lg font-extrabold text-[#1f8e55] flex items-center gap-2">
+          <i data-lucide="plus-circle" class="w-5 h-5"></i> Registrar Otro Ingreso
         </h3>
-        <button onclick="closeModal('modal-new-income')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button onclick="closeModal('modal-new-income')" class="text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
       <form onsubmit="handleCreateIncome(event)" class="space-y-4 text-sm">
         <div>
-          <label class="block text-slate-300 font-medium mb-1">Concepto *</label>
-          <input type="text" id="income-concept" required placeholder="Ej: Venta de proteína / Bebidas" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-emerald-500 transition" />
+          <label class="block text-slate-700 font-semibold mb-1 text-xs">Concepto *</label>
+          <input type="text" id="income-concept" required placeholder="Ej: Venta de hidratación / Proteína" class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 outline-none" />
         </div>
         <div>
-          <label class="block text-slate-300 font-medium mb-1">Valor ($ COP) *</label>
-          <input type="number" id="income-amount" required min="100" placeholder="Ej: 25000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-emerald-500 transition" />
+          <label class="block text-slate-700 font-semibold mb-1 text-xs">Valor ($ COP) *</label>
+          <input type="number" id="income-amount" required min="100" class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-mono outline-none" />
         </div>
         <div class="flex gap-2 pt-2">
-          <button type="button" onclick="closeModal('modal-new-income')" class="flex-1 bg-slate-950 hover:bg-slate-800 py-2.5 rounded-xl font-medium transition text-slate-300 border border-slate-800">Cancelar</button>
-          <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl font-bold text-white transition shadow-md shadow-emerald-950">Guardar Ingreso</button>
+          <button type="button" onclick="closeModal('modal-new-income')" class="flex-1 bg-slate-100 hover:bg-slate-200 py-2.5 rounded-xl font-semibold text-slate-600 transition">Cancelar</button>
+          <button type="submit" class="flex-1 bg-[#1f8e55] hover:bg-[#187544] py-2.5 rounded-xl font-bold text-white transition">Guardar Ingreso</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- MODAL: PAGO A ENTRENADOR (RF-025) -->
-  <div id="modal-coach-payment" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl">
+  <!-- MODAL: PAGO A ENTRENADOR -->
+  <div id="modal-coach-payment" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-bold text-purple-400 flex items-center gap-2">
+        <h3 class="text-lg font-extrabold text-purple-700 flex items-center gap-2">
           <i data-lucide="user-check" class="w-5 h-5"></i> Registrar Pago a Entrenador
         </h3>
-        <button onclick="closeModal('modal-coach-payment')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button onclick="closeModal('modal-coach-payment')" class="text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
       <form onsubmit="handleCoachPayment(event)" class="space-y-4 text-sm">
         <div>
-          <label class="block text-slate-300 font-medium mb-1">Nombre del Entrenador *</label>
-          <input type="text" id="coach-name" required placeholder="Ej: Miguel Ángel Torres" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-purple-500 transition" />
+          <label class="block text-slate-700 font-semibold mb-1 text-xs">Nombre del Entrenador *</label>
+          <input type="text" id="coach-name" required placeholder="Ej: Juan Pérez" class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 outline-none" />
         </div>
         <div>
-          <label class="block text-slate-300 font-medium mb-1">Periodo / Concepto *</label>
-          <input type="text" id="coach-period" required placeholder="Ej: Quincena 1 - Octubre" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white outline-none focus:border-purple-500 transition" />
+          <label class="block text-slate-700 font-semibold mb-1 text-xs">Periodo / Concepto *</label>
+          <input type="text" id="coach-period" required placeholder="Ej: Quincena Octubre" class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 outline-none" />
         </div>
         <div>
-          <label class="block text-slate-300 font-medium mb-1">Valor a Pagar ($ COP) *</label>
-          <input type="number" id="coach-amount" required min="1000" placeholder="Ej: 200000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-purple-500 transition" />
+          <label class="block text-slate-700 font-semibold mb-1 text-xs">Valor Pagado ($ COP) *</label>
+          <input type="number" id="coach-amount" required min="1000" class="w-full bg-[#f3f6f8] border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-mono outline-none" />
         </div>
         <div class="flex gap-2 pt-2">
-          <button type="button" onclick="closeModal('modal-coach-payment')" class="flex-1 bg-slate-950 hover:bg-slate-800 py-2.5 rounded-xl font-medium transition text-slate-300 border border-slate-800">Cancelar</button>
-          <button type="submit" class="flex-1 bg-purple-600 hover:bg-purple-500 py-2.5 rounded-xl font-bold text-white transition shadow-md shadow-purple-950">Registrar Pago</button>
+          <button type="button" onclick="closeModal('modal-coach-payment')" class="flex-1 bg-slate-100 hover:bg-slate-200 py-2.5 rounded-xl font-semibold text-slate-600 transition">Cancelar</button>
+          <button type="submit" class="flex-1 bg-purple-700 hover:bg-purple-800 py-2.5 rounded-xl font-bold text-white transition">Registrar Pago</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- SCRIPT PRINCIPAL -->
   <script src="/app.js"></script>
 </body>
 </html>

@@ -11,27 +11,71 @@ export interface Client {
   notes?: string;
   created_at: string;
   updated_at: string;
+  plan_name?: string;
+  membership_end_date?: string;
+  membership_status?: string;
+  last_access?: string;
 }
 
 export const clientService = {
   list(search?: string, status?: string): Client[] {
-    let query = 'SELECT * FROM clients WHERE 1=1';
+    let query = `
+      SELECT 
+        c.*,
+        (
+          SELECT p.name 
+          FROM client_memberships m 
+          JOIN membership_plans p ON m.plan_id = p.id 
+          WHERE m.client_id = c.id 
+          ORDER BY m.end_date DESC LIMIT 1
+        ) as plan_name,
+        (
+          SELECT m.end_date 
+          FROM client_memberships m 
+          WHERE m.client_id = c.id 
+          ORDER BY m.end_date DESC LIMIT 1
+        ) as membership_end_date,
+        (
+          SELECT MAX(a.check_in_time) 
+          FROM attendances a 
+          WHERE a.client_id = c.id
+        ) as last_access
+      FROM clients c
+      WHERE 1=1
+    `;
     const params: any[] = [];
 
     if (status) {
-      query += ' AND status = ?';
+      query += ' AND c.status = ?';
       params.push(status);
     }
 
     if (search && search.trim() !== '') {
       const term = `%${search.trim()}%`;
-      query += ' AND (document_id LIKE ? OR full_name LIKE ? OR phone LIKE ?)';
+      query += ' AND (c.document_id LIKE ? OR c.full_name LIKE ? OR c.phone LIKE ?)';
       params.push(term, term, term);
     }
 
-    query += ' ORDER BY full_name ASC';
+    query += ' ORDER BY c.created_at DESC';
     // @ts-ignore
-    return db.prepare(query).all(...params) as Client[];
+    const rows = db.prepare(query).all(...params) as Client[];
+    const today = new Date().toISOString().split('T')[0];
+
+    return rows.map(r => {
+      let membership_status = 'SIN_MEMBRESIA';
+      if (r.membership_end_date) {
+        if (r.membership_end_date < today) {
+          membership_status = 'VENCIDA';
+        } else {
+          const diff = Math.round((new Date(r.membership_end_date).getTime() - new Date(today).getTime()) / 86400000);
+          membership_status = diff <= 3 ? 'POR_VENCER' : 'VIGENTE';
+        }
+      }
+      return {
+        ...r,
+        membership_status,
+      };
+    });
   },
 
   getById(id: string): Client | undefined {
@@ -47,7 +91,7 @@ export const clientService = {
   create(data: { documentId: string; fullName: string; phone: string; notes?: string }): Client {
     const existing = this.getByDocument(data.documentId);
     if (existing) {
-      throw new Error(`Ya existe un cliente registrado con el documento ${data.documentId} (${existing.full_name})`);
+      throw new Error(`Ya existe un miembro registrado con el documento ${data.documentId} (${existing.full_name})`);
     }
 
     const id = crypto.randomUUID();
@@ -64,7 +108,7 @@ export const clientService = {
   update(id: string, data: { fullName?: string; phone?: string; notes?: string; status?: string }): Client {
     const current = this.getById(id);
     if (!current) {
-      throw new Error('Cliente no encontrado');
+      throw new Error('Miembro no encontrado');
     }
 
     const fullName = data.fullName !== undefined ? data.fullName.trim() : current.full_name;

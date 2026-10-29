@@ -28,6 +28,10 @@ async function runTests() {
     }
   }
 
+  // Limpiar registros temporales de pruebas previas
+  const { db } = await import('./db/database.js');
+  db.prepare("DELETE FROM clients WHERE document_id IN ('1098765432', '999888777')").run();
+
   // 1. CA-001: Crear cliente y consultar
   const testDoc = '1098765432';
   // Limpiar si ya existía de pruebas previas
@@ -124,6 +128,10 @@ async function runTests() {
   // 8. CA-007: Detección inteligente para WhatsApp
   const candidates = await aiTrackingService.getCandidates();
   assert(Array.isArray(candidates), 'CA-007: Motor de candidatos para seguimiento WhatsApp ejecutado con éxito');
+
+  // Limpiar registros temporales de la prueba para mantener la base limpia
+  db.prepare("DELETE FROM clients WHERE document_id IN ('1098765432', '999888777')").run();
+  db.prepare("DELETE FROM financial_transactions WHERE concept LIKE '%Entrenador Miguel%'").run();
 
   console.log('\n======================================================');
   console.log(`📊 RESULTADOS: ${passed} pruebas superadas, ${failed} fallos.`);

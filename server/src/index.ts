@@ -51,11 +51,14 @@ app.use(rateLimiter({
   message: 'Demasiadas solicitudes desde esta IP. Por favor espera un minuto.'
 }));
 
-// Servir frontend estático optimizado
+// Servir frontend estático siempre fresco
 const publicPath = path.join(__dirname, '../public');
 app.use(express.static(publicPath, {
-  maxAge: '1h',
-  etag: true,
+  etag: false,
+  lastModified: false,
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  }
 }));
 
 // API Routes con rate limiting específico en rutas sensibles

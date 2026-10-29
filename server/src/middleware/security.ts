@@ -13,7 +13,7 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
   // Content Security Policy permitiendo Tailwind CDN y Lucide Icons
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com data: blob:;"
+    "default-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://fonts.googleapis.com https://fonts.gstatic.com https://images.unsplash.com data: blob:;"
   );
   // Ocultar cabecera de Express
   res.removeHeader('X-Powered-By');
