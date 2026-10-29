@@ -1,0 +1,12 @@
+{
+  "name": "gim-gestion",
+  "version": "1.0.0",
+  "description": "Sistema de Gestion Integral para Gimnasio - Fase 1",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix server",
+    "start": "npm run start --prefix server",
+    "build": "npm run build --prefix server",
+    "test": "npx tsx server/src/test-verification.ts"
+  }
+}

@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Local databases and cache
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# WhatsApp Baileys Auth Session
+whatsapp_auth/
+*/whatsapp_auth/
+
+# Environment secrets
+.env
+*/.env
+
+# Build outputs
+dist/
+*/dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
