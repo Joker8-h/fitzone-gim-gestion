@@ -200,8 +200,8 @@ export const App: React.FC = () => {
   const handleLogin = async (username: string, password: string) => {
     setLoginError(null);
     try {
+      // La sesión viaja en cookie HttpOnly; no hay token que guardar en el cliente
       const res = await api.login(username, password);
-      setAuthToken(res.token);
       setCurrentUser(res.user);
       notify(`Sesión iniciada: ${res.user.name}`);
     } catch (err: any) {

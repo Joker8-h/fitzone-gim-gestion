@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { financeService } from '../services/financeService.js';
 import { auditService } from '../services/auditService.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 
 export const financeRouter = Router();
 
@@ -81,10 +82,10 @@ financeRouter.post('/transactions', (req, res) => {
   }
 });
 
-// DELETE /api/finances/transactions/:id - Eliminar movimiento financiero
-financeRouter.delete('/transactions/:id', (req, res) => {
+// DELETE /api/finances/transactions/:id - Eliminar movimiento financiero (solo ADMIN)
+financeRouter.delete('/transactions/:id', requireAuth, requireRole('ADMIN'), (req, res) => {
   try {
-    res.json(financeService.deleteTransaction(req.params.id));
+    res.json(financeService.deleteTransaction(req.params.id as string));
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }

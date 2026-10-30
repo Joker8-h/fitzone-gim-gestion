@@ -3,6 +3,7 @@ import { clientService } from '../services/clientService.js';
 import { membershipService } from '../services/membershipService.js';
 import { attendanceService } from '../services/attendanceService.js';
 import { auditService } from '../services/auditService.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 
 export const clientRouter = Router();
 
@@ -116,11 +117,11 @@ clientRouter.patch('/:id/deactivate', (req, res) => {
   }
 });
 
-// DELETE /api/clients/:id - Eliminar cliente
-clientRouter.delete('/:id', (req, res) => {
+// DELETE /api/clients/:id - Eliminar cliente (solo ADMIN)
+clientRouter.delete('/:id', requireAuth, requireRole('ADMIN'), (req, res) => {
   try {
-    const client = clientService.getById(req.params.id);
-    const result = clientService.delete(req.params.id);
+    const client = clientService.getById(req.params.id as string);
+    const result = clientService.delete(req.params.id as string);
     if (client) {
       auditService.log('DELETE_CLIENT', 'Client', client.id, `Cliente eliminado: ${client.full_name}`, 'Admin');
     }

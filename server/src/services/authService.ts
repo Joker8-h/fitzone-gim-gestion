@@ -2,7 +2,20 @@ import { db } from '../db/database.js';
 import crypto from 'crypto';
 import { auditService } from './auditService.js';
 
-const TOKEN_SECRET = process.env.AUTH_SECRET || 'fitzone-super-secret-key-2026-hmac-sha256';
+function getTokenSecret(): string {
+  const secret = process.env.AUTH_SECRET;
+  if (secret && secret.length >= 16) return secret;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'AUTH_SECRET ausente o demasiado corto (mínimo 16 caracteres). Configúralo en las variables de entorno antes de desplegar.'
+    );
+  }
+  // Desarrollo: secreto efímero por proceso (las sesiones se invalidan al reiniciar)
+  console.warn('[AUTH] AUTH_SECRET no definido: usando secreto efímero solo para desarrollo.');
+  return crypto.randomBytes(32).toString('hex');
+}
+
+const TOKEN_SECRET = getTokenSecret();
 
 export interface AuthUser {
   id: string;
@@ -20,7 +33,9 @@ function hashPassword(password: string): string {
 function verifyPassword(password: string, stored: string): boolean {
   if (!stored.startsWith('scrypt:')) {
     // Soporte de migración automática para contraseña inicial en texto plano del seed
-    return password === stored;
+    const a = Buffer.from(password);
+    const b = Buffer.from(stored);
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
   }
   const parts = stored.split(':');
   if (parts.length !== 3) return false;
@@ -57,7 +72,11 @@ export function verifyToken(token: string): AuthUser | null {
       .update(base64Payload)
       .digest('base64url');
 
-    if (signature !== expectedSig) return null;
+    const sigBuf = Buffer.from(signature);
+    const expectedBuf = Buffer.from(expectedSig);
+    if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
+      return null;
+    }
 
     const payload = JSON.parse(Buffer.from(base64Payload, 'base64url').toString('utf-8'));
     if (!payload.exp || Date.now() > payload.exp) return null;
@@ -75,10 +94,16 @@ export function verifyToken(token: string): AuthUser | null {
 
 export const authService = {
   ensureDefaultUsers() {
-    // Asegurar que exista el usuario admin con hash seguro scrypt
+    // Asegurar que exista el usuario admin con hash seguro scrypt.
+    // La contraseña inicial proviene de ADMIN_INITIAL_PASSWORD; si no está definida
+    // se genera una aleatoria que se imprime UNA sola vez en consola.
     // @ts-ignore
     const existing = db.prepare('SELECT * FROM users WHERE email = ? OR email = ?').get('admin@fitzone.com', 'admin@gimnasio.com') as any;
     if (!existing) {
+      const envPassword = process.env.ADMIN_INITIAL_PASSWORD;
+      const initialPassword = envPassword && envPassword.length >= 8
+        ? envPassword
+        : crypto.randomBytes(12).toString('base64url');
       db.prepare(`
         INSERT INTO users (id, name, email, password, role)
         VALUES (?, ?, ?, ?, 'ADMIN')
@@ -86,11 +111,21 @@ export const authService = {
         crypto.randomUUID(),
         'Administrador FITZONE',
         'admin@fitzone.com',
-        hashPassword('admin123')
+        hashPassword(initialPassword)
       );
+      console.log('========================================================');
+      console.log('  USUARIO ADMINISTRADOR INICIAL CREADO');
+      console.log('  Usuario:  admin@fitzone.com');
+      console.log(`  Contraseña: ${initialPassword}`);
+      console.log('  Guárdala en un lugar seguro. No se volverá a mostrar.');
+      if (!envPassword) {
+        console.log('  Consejo: define ADMIN_INITIAL_PASSWORD en .env para');
+        console.log('  fijar una contraseña propia desde el primer arranque.');
+      }
+      console.log('========================================================');
     } else if (!String(existing.password).startsWith('scrypt:')) {
       db.prepare('UPDATE users SET password = ? WHERE id = ?').run(
-        hashPassword(existing.password || 'admin123'),
+        hashPassword(existing.password),
         existing.id
       );
     }

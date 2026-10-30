@@ -52,7 +52,7 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
 export const api = {
   // Autenticación y Usuarios del Sistema
   login: (username: string, password: string) =>
-    request<{ token: string; user: SystemUser }>('/api/auth/login', {
+    request<{ user: SystemUser }>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     }),

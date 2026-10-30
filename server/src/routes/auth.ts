@@ -1,26 +1,13 @@
 import { Router } from 'express';
-import { authService, verifyToken } from '../services/authService.js';
+import { authService } from '../services/authService.js';
 import { rateLimiter } from '../middleware/security.js';
+import { requireAuth, requireRole, extractToken } from '../middleware/auth.js';
+import { verifyToken } from '../services/authService.js';
 
 export const authRouter = Router();
 
-function extractToken(req: any): string | null {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    return authHeader.substring(7);
-  }
-  const cookieHeader = req.headers.cookie;
-  if (cookieHeader) {
-    const match = cookieHeader
-      .split(';')
-      .map((c: string) => c.trim())
-      .find((c: string) => c.startsWith('fitzone_token='));
-    if (match) {
-      return decodeURIComponent(match.split('=')[1]);
-    }
-  }
-  return null;
-}
+const isProduction = process.env.NODE_ENV === 'production';
+const cookieAttrs = `HttpOnly; Path=/; Max-Age=86400; SameSite=Lax${isProduction ? '; Secure' : ''}`;
 
 // POST /api/auth/login - Iniciar sesión con rate limiting estricto anti-fuerza bruta
 authRouter.post(
@@ -39,12 +26,10 @@ authRouter.post(
 
       const { token, user } = authService.login(String(username), String(password));
 
-      res.setHeader(
-        'Set-Cookie',
-        `fitzone_token=${encodeURIComponent(token)}; HttpOnly; Path=/; Max-Age=86400; SameSite=Lax`
-      );
+      // La sesión viaja SOLO en cookie HttpOnly (nunca en el body de la respuesta)
+      res.setHeader('Set-Cookie', `fitzone_token=${encodeURIComponent(token)}; ${cookieAttrs}`);
 
-      res.json({ token, user });
+      res.json({ user });
     } catch (err: any) {
       res.status(401).json({ error: err.message });
     }
@@ -53,7 +38,7 @@ authRouter.post(
 
 // POST /api/auth/logout - Cerrar sesión
 authRouter.post('/logout', (_req, res) => {
-  res.setHeader('Set-Cookie', 'fitzone_token=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax');
+  res.setHeader('Set-Cookie', `fitzone_token=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax${isProduction ? '; Secure' : ''}`);
   res.json({ ok: true });
 });
 
@@ -70,17 +55,18 @@ authRouter.get('/me', (req, res) => {
   res.json({ user });
 });
 
-// GET /api/auth/users - Listar usuarios del sistema
-authRouter.get('/users', (_req, res) => {
+// Gestión de usuarios del sistema: solo ADMIN
+authRouter.get('/users', requireAuth, requireRole('ADMIN'), (_req, res) => {
   try {
     res.json(authService.listUsers());
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'No se pudieron listar los usuarios.' });
+    console.error('[AUTH] listUsers:', err.message);
   }
 });
 
 // POST /api/auth/users - Crear nuevo usuario con contraseña para ingresar al sistema
-authRouter.post('/users', (req, res) => {
+authRouter.post('/users', requireAuth, requireRole('ADMIN'), (req, res) => {
   try {
     const { name, email, password, role } = req.body;
     if (!name || !email || !password) {
@@ -94,9 +80,9 @@ authRouter.post('/users', (req, res) => {
 });
 
 // DELETE /api/auth/users/:id - Eliminar usuario
-authRouter.delete('/users/:id', (req, res) => {
+authRouter.delete('/users/:id', requireAuth, requireRole('ADMIN'), (req, res) => {
   try {
-    res.json(authService.deleteUser(req.params.id));
+    res.json(authService.deleteUser(req.params.id as string));
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }

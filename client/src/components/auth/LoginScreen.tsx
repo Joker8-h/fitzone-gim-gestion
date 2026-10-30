@@ -6,8 +6,8 @@ interface LoginScreenProps {
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, errorMessage }) => {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -182,7 +182,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, errorMessage 
                 id="login-username"
                 type="text"
                 className="form-input"
-                placeholder="admin o admin@fitzone.com"
+                placeholder="tu usuario o correo"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -243,32 +243,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, errorMessage 
               {loading ? 'Verificando credenciales...' : 'Ingresar al Panel FITZONE'}
             </button>
           </form>
-
-          {/* Tarjeta informativa de credenciales iniciales */}
-          <div
-            style={{
-              marginTop: 22,
-              padding: '12px 14px',
-              backgroundColor: '#e6f4ee',
-              borderRadius: 12,
-              border: '1px solid #bbf7d0',
-              fontSize: 12,
-              color: '#166534',
-            }}
-          >
-            <div style={{ fontWeight: 800, marginBottom: 4 }}>Credenciales de Acceso Inicial:</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-              <span>
-                Usuario: <strong>admin</strong> (o <strong>admin@fitzone.com</strong>)
-              </span>
-            </div>
-            <div>
-              Contraseña: <strong>admin123</strong>
-            </div>
-            <div style={{ marginTop: 6, fontSize: 11, color: '#15803d' }}>
-              * Una vez dentro, puedes gestionar cuentas de usuario desde el botón Usuarios en la barra superior.
-            </div>
-          </div>
         </div>
       </div>
     </div>

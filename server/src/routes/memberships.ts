@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { membershipService } from '../services/membershipService.js';
 import { auditService } from '../services/auditService.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 
 export const membershipRouter = Router();
 
@@ -69,10 +70,10 @@ membershipRouter.put('/plans/:id', (req, res) => {
   }
 });
 
-// DELETE /api/memberships/plans/:id - Eliminar o desactivar plan
-membershipRouter.delete('/plans/:id', (req, res) => {
+// DELETE /api/memberships/plans/:id - Eliminar o desactivar plan (solo ADMIN)
+membershipRouter.delete('/plans/:id', requireAuth, requireRole('ADMIN'), (req, res) => {
   try {
-    res.json(membershipService.deletePlan(req.params.id));
+    res.json(membershipService.deletePlan(req.params.id as string));
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }

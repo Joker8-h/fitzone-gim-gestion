@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { baileysManager } from '../services/baileysService.js';
 import { aiTrackingService } from '../services/aiTrackingService.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 
 export const whatsappRouter = Router();
 
@@ -84,8 +85,8 @@ whatsappRouter.post('/send', async (req, res) => {
   }
 });
 
-// POST /api/whatsapp/run-automated - Barrido automático IA para todos los candidatos
-whatsappRouter.post('/run-automated', async (_req, res) => {
+// POST /api/whatsapp/run-automated - Barrido automático IA para todos los candidatos (solo ADMIN)
+whatsappRouter.post('/run-automated', requireAuth, requireRole('ADMIN'), async (_req, res) => {
   try {
     const result = await aiTrackingService.runAutomatedSweep();
     res.json(result);

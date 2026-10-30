@@ -1,12 +1,13 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { initDatabase } from './db/database.js';
 import { runSeed } from './db/seed.js';
 
 import { securityHeaders, rateLimiter, sanitizeInputs } from './middleware/security.js';
+import { requireAuth } from './middleware/auth.js';
 
 import { clientRouter } from './routes/clients.js';
 import { membershipRouter } from './routes/memberships.js';
@@ -16,8 +17,6 @@ import { dashboardRouter } from './routes/dashboard.js';
 import { whatsappRouter } from './routes/whatsapp.js';
 import { operationsRouter } from './routes/operations.js';
 import { authRouter } from './routes/auth.js';
-
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,15 +28,33 @@ runSeed();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Detrás del proxy de Railway/NGINX confiar en X-Forwarded-For para
+// que el rate limiting y la auditoría usen la IP real del cliente
+app.set('trust proxy', 1);
+
 // 1. Cabeceras de seguridad estrictas
 app.use(securityHeaders);
 
-// 2. CORS restrictivo
-app.use(cors({
-  origin: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  credentials: true
-}));
+// 2. CORS restrictivo: solo el origen del propio dominio (o CLIENT_ORIGIN en env)
+const configuredOrigin = process.env.CLIENT_ORIGIN;
+const allowedOrigins = configuredOrigin
+  ? configuredOrigin.split(',').map((o) => o.trim()).filter(Boolean)
+  : [];
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Permitir requests sin origen (mismo dominio, curl, healthchecks)
+      if (!origin) return callback(null, true);
+      // En desarrollo aceptar el dev server de Vite (localhost:5173)
+      const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+      if (process.env.NODE_ENV !== 'production' && isLocalhost) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(null, false);
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    credentials: true
+  })
+);
 
 // 3. Límite de tamaño de body para prevenir DoS
 app.use(express.json({ limit: '1mb' }));
@@ -63,15 +80,16 @@ app.use(express.static(publicPath, {
   }
 }));
 
-// API Routes con rate limiting específico en rutas sensibles
+// API Routes: todas requieren sesión (el router de auth gestiona sus rutas
+// públicas de login/logout/me internamente)
 app.use('/api/auth', authRouter);
-app.use('/api/clients', clientRouter);
-app.use('/api/memberships', membershipRouter);
-app.use('/api/attendance', attendanceRouter);
-app.use('/api/finances', financeRouter);
-app.use('/api/dashboard', dashboardRouter);
-app.use('/api/whatsapp', whatsappRouter);
-app.use('/api/operations', operationsRouter);
+app.use('/api/clients', requireAuth, clientRouter);
+app.use('/api/memberships', requireAuth, membershipRouter);
+app.use('/api/attendance', requireAuth, attendanceRouter);
+app.use('/api/finances', requireAuth, financeRouter);
+app.use('/api/dashboard', requireAuth, dashboardRouter);
+app.use('/api/whatsapp', requireAuth, whatsappRouter);
+app.use('/api/operations', requireAuth, operationsRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({
