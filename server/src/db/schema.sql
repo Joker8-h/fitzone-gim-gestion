@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS clients (
   document_id TEXT UNIQUE NOT NULL,
   full_name TEXT NOT NULL,
   phone TEXT NOT NULL,
+  email TEXT,
+  avatar_url TEXT,
   registration_date TEXT NOT NULL DEFAULT (date('now', 'localtime')),
   status TEXT NOT NULL DEFAULT 'ACTIVO',
   notes TEXT,
@@ -80,6 +82,48 @@ CREATE TABLE IF NOT EXISTS financial_transactions (
   date TEXT NOT NULL DEFAULT (date('now', 'localtime')),
   payment_id TEXT UNIQUE REFERENCES payments(id) ON DELETE CASCADE,
   registered_by TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+);
+
+CREATE TABLE IF NOT EXISTS employees (
+  id TEXT PRIMARY KEY,
+  full_name TEXT NOT NULL,
+  role TEXT NOT NULL,
+  specialty TEXT,
+  phone TEXT NOT NULL,
+  salary REAL NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'ACTIVO',
+  created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+);
+
+CREATE TABLE IF NOT EXISTS gym_classes (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  instructor_name TEXT NOT NULL,
+  schedule_time TEXT NOT NULL,
+  enrolled_count INTEGER NOT NULL DEFAULT 0,
+  capacity INTEGER NOT NULL DEFAULT 20,
+  color_theme TEXT NOT NULL DEFAULT 'emerald',
+  status TEXT NOT NULL DEFAULT 'PROGRAMADA',
+  created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+);
+
+CREATE TABLE IF NOT EXISTS gym_events (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  event_date TEXT NOT NULL,
+  day_num TEXT NOT NULL,
+  month_short TEXT NOT NULL,
+  time_range TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+);
+
+CREATE TABLE IF NOT EXISTS equipment (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  category TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'Disponible',
+  last_maintenance TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
 );
 

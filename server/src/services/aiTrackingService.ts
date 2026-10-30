@@ -59,9 +59,9 @@ export const aiTrackingService = {
 
         let prompt = '';
         if (candidate.reason === 'INACTIVITY') {
-          prompt = `Eres el asistente virtual de un gimnasio en Colombia. Redacta un mensaje de WhatsApp corto (máximo 3 líneas), cálido, motivador y con emojis para ${candidate.fullName}, quien lleva ${candidate.daysInfo} días sin venir a entrenar a pesar de tener su membresía activa. No uses saludos excesivamente formales, usa un tono cercano y enérgico invitándolo a volver hoy mismo.`;
+          prompt = `Eres el asistente administrativo de FITZONE en Colombia. Redacta un mensaje de WhatsApp corto (máximo 3 líneas), cordial, profesional y sin emojis para ${candidate.fullName}, quien lleva ${candidate.daysInfo} días sin asistir a entrenar a pesar de tener su membresía activa. Usa un tono respetuoso y motivador invitándolo a retomar su entrenamiento.`;
         } else {
-          prompt = `Eres el asistente virtual de un gimnasio en Colombia. Redacta un recordatorio de WhatsApp breve (máximo 3 líneas), amable y con emojis para ${candidate.fullName}. Su membresía (${candidate.planName || 'Plan actual'}) vence en ${candidate.daysInfo} días (el ${candidate.endDate}). Recuérdale renovar con tiempo para que no corte su racha.`;
+          prompt = `Eres el asistente administrativo de FITZONE en Colombia. Redacta un recordatorio de WhatsApp breve (máximo 3 líneas), cordial, profesional y sin emojis para ${candidate.fullName}. Su membresía (${candidate.planName || 'Plan actual'}) vence en ${candidate.daysInfo} días (el ${candidate.endDate}). Recuérdale renovar oportunamente para mantener activo su acceso.`;
         }
 
         const result = await model.generateContent(prompt);
@@ -192,22 +192,28 @@ export const aiTrackingService = {
     return candidates;
   },
 
-  // Enviar mensaje real vía WhatsApp Baileys
+  // Enviar mensaje vía WhatsApp Baileys (o registrar simulación IA si el teléfono aún no ha escaneado QR)
   async sendCommunication(clientId: string, ruleType: string, message: string): Promise<boolean> {
     // @ts-ignore
     const client = db.prepare('SELECT * FROM clients WHERE id = ?').get(clientId) as any;
     if (!client) throw new Error('Cliente no encontrado');
 
     const logId = crypto.randomUUID();
+    const waStatus = baileysManager.getStatus();
 
     try {
-      await baileysManager.sendMessage(client.phone, message);
-
-      db.prepare(`
-        INSERT INTO communication_logs (id, client_id, rule_type, message, status)
-        VALUES (?, ?, ?, ?, 'SENT')
-      `).run(logId, clientId, ruleType, message);
-
+      if (waStatus.status === 'CONNECTED') {
+        await baileysManager.sendMessage(client.phone, message);
+        db.prepare(`
+          INSERT INTO communication_logs (id, client_id, rule_type, message, status, response_info)
+          VALUES (?, ?, ?, ?, 'SENT', 'Enviado por WhatsApp Baileys')
+        `).run(logId, clientId, ruleType, message);
+      } else {
+        db.prepare(`
+          INSERT INTO communication_logs (id, client_id, rule_type, message, status, response_info)
+          VALUES (?, ?, ?, ?, 'PROCESSED_AI', 'Generado por IA (Pendiente vincular QR para despacho directo)')
+        `).run(logId, clientId, ruleType, message);
+      }
       return true;
     } catch (err: any) {
       db.prepare(`
@@ -216,6 +222,17 @@ export const aiTrackingService = {
       `).run(logId, clientId, ruleType, message, err?.message || 'Error de envío');
       throw err;
     }
+  },
+
+  // Ejecutar barrido automático completo de todos los candidatos detectados hoy
+  async runAutomatedSweep(): Promise<{ processedCount: number; candidates: TrackingCandidate[] }> {
+    const candidates = await this.getCandidates();
+    let processedCount = 0;
+    for (const c of candidates) {
+      await this.sendCommunication(c.clientId, c.reason, c.suggestedMessage);
+      processedCount++;
+    }
+    return { processedCount, candidates };
   },
 
   // Obtener historial de comunicaciones enviadas

@@ -16,13 +16,23 @@ export function initDatabase() {
   db.exec('PRAGMA foreign_keys = ON;');
   db.exec('PRAGMA journal_mode = WAL;');
 
-  let schemaPath = path.join(__dirname, 'schema.sql');
-  if (!fs.existsSync(schemaPath)) {
-    schemaPath = path.join(process.cwd(), 'src', 'db', 'schema.sql');
+  const candidates = [
+    path.join(__dirname, 'schema.sql'),
+    path.join(process.cwd(), 'src', 'db', 'schema.sql'),
+    path.join(process.cwd(), 'server', 'src', 'db', 'schema.sql'),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      const schemaSql = fs.readFileSync(candidate, 'utf-8');
+      db.exec(schemaSql);
+      break;
+    }
   }
-  if (fs.existsSync(schemaPath)) {
-    const schemaSql = fs.readFileSync(schemaPath, 'utf-8');
-    db.exec(schemaSql);
-  }
+  try {
+    db.exec('ALTER TABLE clients ADD COLUMN email TEXT;');
+  } catch (_) {}
+  try {
+    db.exec('ALTER TABLE clients ADD COLUMN avatar_url TEXT;');
+  } catch (_) {}
   console.log('[DB] Base de datos SQLite nativa inicializada en:', dbPath);
 }

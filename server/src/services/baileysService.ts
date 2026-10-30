@@ -30,7 +30,9 @@ class BaileysManager {
     return {
       status: this.status,
       qrCodeDataUrl: this.qrCodeDataUrl,
+      qrDataUrl: this.qrCodeDataUrl,
       userPhone: this.userPhone,
+      connectedPhone: this.userPhone,
     };
   }
 

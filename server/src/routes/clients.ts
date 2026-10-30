@@ -115,3 +115,17 @@ clientRouter.patch('/:id/deactivate', (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
+
+// DELETE /api/clients/:id - Eliminar cliente
+clientRouter.delete('/:id', (req, res) => {
+  try {
+    const client = clientService.getById(req.params.id);
+    const result = clientService.delete(req.params.id);
+    if (client) {
+      auditService.log('DELETE_CLIENT', 'Client', client.id, `Cliente eliminado: ${client.full_name}`, 'Admin');
+    }
+    res.json(result);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});

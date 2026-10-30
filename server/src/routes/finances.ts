@@ -81,6 +81,15 @@ financeRouter.post('/transactions', (req, res) => {
   }
 });
 
+// DELETE /api/finances/transactions/:id - Eliminar movimiento financiero
+financeRouter.delete('/transactions/:id', (req, res) => {
+  try {
+    res.json(financeService.deleteTransaction(req.params.id));
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // POST /api/finances/coach-payment - Registrar pago a entrenador (RF-025)
 financeRouter.post('/coach-payment', (req, res) => {
   try {

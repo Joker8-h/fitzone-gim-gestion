@@ -5,6 +5,7 @@ import { getTodayString, addDaysToDate } from './membershipService.js';
 export const dashboardService = {
   getMetrics() {
     const today = getTodayString();
+    const currentYear = today.substring(0, 4);
     const currentMonthPrefix = today.substring(0, 7); // 'YYYY-MM'
     const startOfMonth = `${currentMonthPrefix}-01`;
 
@@ -29,6 +30,7 @@ export const dashboardService = {
         FROM client_memberships
         GROUP BY client_id
       ) latest ON m.client_id = latest.client_id AND m.end_date = latest.max_end
+      GROUP BY m.client_id
     `).all() as any[];
 
     let vigente = 0;
@@ -69,7 +71,7 @@ export const dashboardService = {
       WHERE date(check_in_time) >= ?
     `).get(startOfMonth) as any;
 
-    // 5. Asistencias de los últimos 7 días
+    // 5. Asistencias de los últimos 7 días (reales desde base de datos)
     const monthsShort = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const attendanceLast7Days = [];
     for (let i = 6; i >= 0; i--) {
@@ -84,16 +86,16 @@ export const dashboardService = {
       attendanceLast7Days.push({
         date: dStr,
         label,
-        count: row?.count || 0,
+        count: Number(row?.count || 0),
       });
     }
 
-    // 6. Miembros recientes (últimas entradas)
+    // 6. Miembros recientes (últimas entradas reales)
     // @ts-ignore
     const recentAttendances = db.prepare(`
       SELECT 
         a.id, a.client_id, a.check_in_time, a.was_overridden,
-        c.full_name, c.document_id,
+        c.full_name, c.document_id, c.avatar_url,
         (
           SELECT p.name 
           FROM client_memberships m 
@@ -107,12 +109,12 @@ export const dashboardService = {
       LIMIT 6
     `).all() as any[];
 
-    // 7. Últimos pagos registrados
+    // 7. Últimos pagos registrados (reales)
     // @ts-ignore
     const recentPayments = db.prepare(`
       SELECT 
         pay.id, pay.amount, pay.payment_method, pay.created_at,
-        c.full_name, c.document_id,
+        c.full_name, c.document_id, c.avatar_url,
         COALESCE(pl.name, 'Membresía') as plan_name
       FROM payments pay
       JOIN clients c ON pay.client_id = c.id
@@ -122,40 +124,72 @@ export const dashboardService = {
       LIMIT 6
     `).all() as any[];
 
-    // 8. Distribución de planes (para gráfica de dona)
-    const totalWithPlans = allLatest.length || 1;
-    const planDistribution = Object.entries(planCounter).map(([name, count]) => ({
-      name,
-      count,
-      percentage: Math.round((count / totalWithPlans) * 100),
-    })).sort((a, b) => b.count - a.count);
+    // 8. Distribución real de planes (para gráfica de dona)
+    const totalWithPlans = allLatest.length;
+    const planDistribution = totalWithPlans > 0
+      ? Object.entries(planCounter).map(([name, count]) => ({
+          name,
+          count,
+          percentage: Math.round((count / totalWithPlans) * 100),
+        })).sort((a, b) => b.count - a.count)
+      : [];
 
-    const activeCount = clientCounts?.active || 0;
-    const todayCount = todayAtt?.count || 0;
-    const attendancePercentage = activeCount > 0 ? Math.min(100, Math.round((todayCount / activeCount) * 100)) : 0;
+    // 9. Ingresos mensuales reales por mes del año actual
+    const currentMonthNum = Math.max(10, Number(today.substring(5, 7)));
+    const monthlyRevenues = [];
+    for (let m = 1; m <= currentMonthNum; m++) {
+      const mPrefix = `${currentYear}-${String(m).padStart(2, '0')}`;
+      // @ts-ignore
+      const row = db.prepare(`
+        SELECT COALESCE(SUM(amount), 0) as total
+        FROM financial_transactions
+        WHERE type = 'INGRESO' AND strftime('%Y-%m', date) = ?
+      `).get(mPrefix) as any;
+      monthlyRevenues.push({
+        month: monthsShort[m - 1],
+        total: Number(row?.total || 0),
+      });
+    }
+
+    // 10. Clases del día, Próximos eventos y Estado de equipos (reales)
+    // @ts-ignore
+    const classesToday = db.prepare('SELECT * FROM gym_classes ORDER BY schedule_time ASC').all() as any[];
+    // @ts-ignore
+    const upcomingEvents = db.prepare('SELECT * FROM gym_events ORDER BY event_date ASC LIMIT 5').all() as any[];
+    // @ts-ignore
+    const equipmentList = db.prepare('SELECT * FROM equipment ORDER BY created_at ASC LIMIT 6').all() as any[];
+
+    const activeCount = Number(clientCounts?.active || 0);
+    const todayCount = Number(todayAtt?.count || 0);
+    const attendancePercentage =
+      activeCount > 0 ? Math.min(100, Math.round((todayCount / activeCount) * 100)) : 0;
 
     return {
-      totalClients: clientCounts?.total || 0,
+      totalClients: Number(clientCounts?.total || 0),
       activeClients: activeCount,
-      inactiveClients: clientCounts?.inactive || 0,
-      todayIncomes: todayFinances.totalIncomes,
+      inactiveClients: Number(clientCounts?.inactive || 0),
+      todayIncomes: Number(todayFinances.totalIncomes || 0),
       memberships: {
         vigente,
         porVencer,
         vencida,
       },
       financesMonth: {
-        totalIncomes: monthFinances.totalIncomes,
-        totalExpenses: monthFinances.totalExpenses,
-        netResult: monthFinances.netResult,
+        totalIncomes: Number(monthFinances.totalIncomes || 0),
+        totalExpenses: Number(monthFinances.totalExpenses || 0),
+        netResult: Number(monthFinances.netResult || 0),
       },
       todayAttendancesCount: todayCount,
-      monthAttendancesCount: monthAtt?.count || 0,
+      monthAttendancesCount: Number(monthAtt?.count || 0),
       attendancePercentage,
       attendanceLast7Days,
       recentAttendances,
       recentPayments,
       planDistribution,
+      monthlyRevenues,
+      classesToday,
+      upcomingEvents,
+      equipmentList,
     };
   }
 };

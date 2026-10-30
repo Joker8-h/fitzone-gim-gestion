@@ -1,4 +1,5 @@
 import { db } from '../db/database.js';
+import { getTodayString } from './membershipService.js';
 import crypto from 'crypto';
 
 export interface FinancialCategory {
@@ -65,7 +66,7 @@ export const financeService = {
     }
 
     const id = crypto.randomUUID();
-    const date = data.date || new Date().toISOString().split('T')[0];
+    const date = data.date || getTodayString();
 
     db.prepare(`
       INSERT INTO financial_transactions (id, type, category_id, concept, amount, date, registered_by)
@@ -146,6 +147,11 @@ export const financeService = {
     query += ' ORDER BY t.date DESC, t.created_at DESC';
     // @ts-ignore
     return db.prepare(query).all(...params) as FinancialTransaction[];
+  },
+
+  deleteTransaction(id: string) {
+    db.prepare('DELETE FROM financial_transactions WHERE id = ?').run(id);
+    return { deleted: true };
   },
 
   // Resumen financiero (RF-026 / RN-007)

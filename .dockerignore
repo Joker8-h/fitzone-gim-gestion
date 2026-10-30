@@ -1,0 +1,14 @@
+node_modules
+client/node_modules
+server/node_modules
+server/dist
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+whatsapp_auth
+server/whatsapp_auth
+.git
+.env
+server/.env
+client/.env

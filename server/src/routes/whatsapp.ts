@@ -78,7 +78,17 @@ whatsappRouter.post('/send', async (req, res) => {
     }
 
     await aiTrackingService.sendCommunication(clientId, ruleType || 'MANUAL', message);
-    res.json({ success: true, message: 'Mensaje enviado exitosamente vía WhatsApp' });
+    res.json({ success: true, message: 'Mensaje procesado exitosamente' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/whatsapp/run-automated - Barrido automático IA para todos los candidatos
+whatsappRouter.post('/run-automated', async (_req, res) => {
+  try {
+    const result = await aiTrackingService.runAutomatedSweep();
+    res.json(result);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

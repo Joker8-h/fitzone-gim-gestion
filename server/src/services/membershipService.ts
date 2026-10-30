@@ -34,10 +34,13 @@ export interface PaymentRecord {
   created_at: string;
 }
 
-// Helpers para fechas (formato YYYY-MM-DD)
+// Helpers para fechas locales (formato YYYY-MM-DD sincronizado con SQLite localtime)
 export function getTodayString(): string {
   const d = new Date();
-  return d.toISOString().split('T')[0];
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 export function addDaysToDate(dateStr: string, days: number): string {
@@ -96,6 +99,18 @@ export const membershipService = {
     `).run(name, durationDays, price, description, isActive, id);
 
     return this.getPlanById(id)!;
+  },
+
+  deletePlan(id: string) {
+    // Si tiene membresías asociadas, desactivar lógicamente; si no, eliminar físicamente
+    // @ts-ignore
+    const used = (db.prepare('SELECT COUNT(*) as c FROM client_memberships WHERE plan_id = ?').get(id) as any)?.c || 0;
+    if (used > 0) {
+      db.prepare('UPDATE membership_plans SET is_active = 0 WHERE id = ?').run(id);
+    } else {
+      db.prepare('DELETE FROM membership_plans WHERE id = ?').run(id);
+    }
+    return { deleted: true };
   },
 
   // Obtiene el estado calculado de la membresía más reciente

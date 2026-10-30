@@ -14,6 +14,8 @@ import { attendanceRouter } from './routes/attendance.js';
 import { financeRouter } from './routes/finances.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { whatsappRouter } from './routes/whatsapp.js';
+import { operationsRouter } from './routes/operations.js';
+import { authRouter } from './routes/auth.js';
 
 dotenv.config();
 
@@ -62,12 +64,14 @@ app.use(express.static(publicPath, {
 }));
 
 // API Routes con rate limiting específico en rutas sensibles
+app.use('/api/auth', authRouter);
 app.use('/api/clients', clientRouter);
 app.use('/api/memberships', membershipRouter);
 app.use('/api/attendance', attendanceRouter);
 app.use('/api/finances', financeRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/whatsapp', whatsappRouter);
+app.use('/api/operations', operationsRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({
@@ -83,9 +87,9 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(publicPath, 'index.html'));
 });
 
-app.listen(PORT, () => {
+app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`\n======================================================`);
-  console.log(`  🛡️ GIM — Servidor Seguro y Endurecido (Fase 1)`);
-  console.log(`  🌐 Acceso Web: http://localhost:${PORT}`);
+  console.log(`  FITZONE — Servidor Seguro y Endurecido (Fase 1)`);
+  console.log(`  Acceso Web: http://localhost:${PORT}`);
   console.log(`======================================================\n`);
 });

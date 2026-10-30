@@ -1,4 +1,5 @@
 import { db } from '../db/database.js';
+import { getTodayString } from './membershipService.js';
 import crypto from 'crypto';
 
 export interface Client {
@@ -59,7 +60,7 @@ export const clientService = {
     query += ' ORDER BY c.created_at DESC';
     // @ts-ignore
     const rows = db.prepare(query).all(...params) as Client[];
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayString();
 
     return rows.map(r => {
       let membership_status = 'SIN_MEMBRESIA';
@@ -95,7 +96,7 @@ export const clientService = {
     }
 
     const id = crypto.randomUUID();
-    const now = new Date().toISOString().split('T')[0];
+    const now = getTodayString();
 
     db.prepare(`
       INSERT INTO clients (id, document_id, full_name, phone, registration_date, status, notes)
@@ -127,5 +128,10 @@ export const clientService = {
 
   deactivate(id: string): Client {
     return this.update(id, { status: 'INACTIVO' });
+  },
+
+  delete(id: string) {
+    db.prepare('DELETE FROM clients WHERE id = ?').run(id);
+    return { deleted: true };
   }
 };

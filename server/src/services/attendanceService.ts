@@ -117,6 +117,32 @@ export const attendanceService = {
     };
   },
 
+  // Asistencias registradas (todas o filtradas por fecha)
+  listAttendances(date?: string): (AttendanceRecord & { status: string; plan_name?: string })[] {
+    if (date && date.trim() !== '') {
+      // @ts-ignore
+      return db.prepare(`
+        SELECT 
+          a.id, a.client_id, a.check_in_time, a.was_overridden, a.override_reason, a.registered_by,
+          c.full_name, c.document_id, c.phone
+        FROM attendances a
+        JOIN clients c ON a.client_id = c.id
+        WHERE date(a.check_in_time) = ?
+        ORDER BY a.check_in_time DESC
+      `).all(date.trim()) as any[];
+    }
+    // @ts-ignore
+    return db.prepare(`
+      SELECT 
+        a.id, a.client_id, a.check_in_time, a.was_overridden, a.override_reason, a.registered_by,
+        c.full_name, c.document_id, c.phone
+      FROM attendances a
+      JOIN clients c ON a.client_id = c.id
+      ORDER BY a.check_in_time DESC
+      LIMIT 150
+    `).all() as any[];
+  },
+
   // Asistencias registradas hoy
   getTodayAttendances(): (AttendanceRecord & { status: string; plan_name?: string })[] {
     // @ts-ignore
