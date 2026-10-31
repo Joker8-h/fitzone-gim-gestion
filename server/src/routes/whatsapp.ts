@@ -36,20 +36,21 @@ whatsappRouter.post('/disconnect', async (req, res) => {
 });
 
 // GET /api/whatsapp/rules - Listar reglas de seguimiento
-whatsappRouter.get('/rules', (req, res) => {
+whatsappRouter.get('/rules', async (req, res) => {
   try {
-    const rules = aiTrackingService.getRules();
+    const rules = await aiTrackingService.getRules();
     res.json(rules);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'No se pudieron cargar las reglas de seguimiento.' });
+    console.error('[WHATSAPP] rules:', err.message);
   }
 });
 
 // PUT /api/whatsapp/rules/:ruleType - Actualizar umbrales y plantillas
-whatsappRouter.put('/rules/:ruleType', (req, res) => {
+whatsappRouter.put('/rules/:ruleType', async (req, res) => {
   try {
     const { thresholdDays, isEnabled, messageTemplate } = req.body;
-    const updated = aiTrackingService.updateRule(req.params.ruleType, {
+    const updated = await aiTrackingService.updateRule(req.params.ruleType, {
       thresholdDays: thresholdDays !== undefined ? Number(thresholdDays) : undefined,
       isEnabled,
       messageTemplate,
@@ -96,11 +97,12 @@ whatsappRouter.post('/run-automated', requireAuth, requireRole('ADMIN'), async (
 });
 
 // GET /api/whatsapp/logs - Historial de mensajes enviados
-whatsappRouter.get('/logs', (req, res) => {
+whatsappRouter.get('/logs', async (req, res) => {
   try {
-    const logs = aiTrackingService.getLogs();
+    const logs = await aiTrackingService.getLogs();
     res.json(logs);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'No se pudo cargar el historial de mensajes.' });
+    console.error('[WHATSAPP] logs:', err.message);
   }
 });

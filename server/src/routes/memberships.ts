@@ -6,17 +6,18 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 export const membershipRouter = Router();
 
 // GET /api/memberships/plans - Listar catálogo de planes
-membershipRouter.get('/plans', (req, res) => {
+membershipRouter.get('/plans', async (req, res) => {
   try {
-    const plans = membershipService.getPlans(req.query.all !== 'true');
+    const plans = await membershipService.getPlans(req.query.all !== 'true');
     res.json(plans);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'No se pudieron cargar los planes.' });
+    console.error('[MEMBERSHIPS] getPlans:', err.message);
   }
 });
 
 // POST /api/memberships/plans - Crear nuevo plan
-membershipRouter.post('/plans', (req, res) => {
+membershipRouter.post('/plans', async (req, res) => {
   try {
     const { name, durationDays, price, description } = req.body;
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -32,19 +33,19 @@ membershipRouter.post('/plans', (req, res) => {
       return res.status(400).json({ error: 'El precio debe ser un número mayor a 0' });
     }
 
-    const plan = membershipService.createPlan({
+    const plan = await membershipService.createPlan({
       name: name.trim(),
       durationDays: Math.floor(days),
       price: amount,
       description: description ? description.trim() : undefined,
     });
 
-    auditService.log(
+    await auditService.log(
       'CREATE_PLAN',
       'MembershipPlan',
       plan.id,
       `Nuevo plan creado: ${plan.name} (${plan.duration_days} días por $${plan.price})`,
-      'Admin'
+      req.user?.name || 'Admin'
     );
 
     res.status(201).json(plan);
@@ -54,10 +55,10 @@ membershipRouter.post('/plans', (req, res) => {
 });
 
 // PUT /api/memberships/plans/:id - Editar plan
-membershipRouter.put('/plans/:id', (req, res) => {
+membershipRouter.put('/plans/:id', async (req, res) => {
   try {
     const { name, durationDays, price, description, isActive } = req.body;
-    const updated = membershipService.updatePlan(req.params.id, {
+    const updated = await membershipService.updatePlan(req.params.id, {
       name,
       durationDays: durationDays !== undefined ? Number(durationDays) : undefined,
       price: price !== undefined ? Number(price) : undefined,
@@ -71,16 +72,16 @@ membershipRouter.put('/plans/:id', (req, res) => {
 });
 
 // DELETE /api/memberships/plans/:id - Eliminar o desactivar plan (solo ADMIN)
-membershipRouter.delete('/plans/:id', requireAuth, requireRole('ADMIN'), (req, res) => {
+membershipRouter.delete('/plans/:id', requireAuth, requireRole('ADMIN'), async (req, res) => {
   try {
-    res.json(membershipService.deletePlan(req.params.id as string));
+    res.json(await membershipService.deletePlan(req.params.id as string));
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
 });
 
 // POST /api/memberships/assign - Asignar y cobrar membresía (Suma días si activa - DP-002)
-membershipRouter.post('/assign', (req, res) => {
+membershipRouter.post('/assign', async (req, res) => {
   try {
     const {
       clientId,
@@ -97,7 +98,7 @@ membershipRouter.post('/assign', (req, res) => {
       return res.status(400).json({ error: 'Cliente y Plan son obligatorios' });
     }
 
-    const plan = membershipService.getPlanById(String(planId));
+    const plan = await membershipService.getPlanById(String(planId));
     const rawValue = amountPaid ?? pricePaid ?? plan?.price;
     const amount = Number(rawValue);
 
@@ -111,7 +112,7 @@ membershipRouter.post('/assign', (req, res) => {
       return res.status(400).json({ error: 'Método de pago no reconocido' });
     }
 
-    const result = membershipService.assignMembership({
+    const result = await membershipService.assignMembership({
       clientId,
       planId,
       amountPaid: amount,
@@ -121,7 +122,7 @@ membershipRouter.post('/assign', (req, res) => {
       registeredBy: registeredBy || 'Recepción',
     });
 
-    auditService.log(
+    await auditService.log(
       'ASSIGN_MEMBERSHIP',
       'ClientMembership',
       result.membership.id,

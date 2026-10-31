@@ -6,23 +6,24 @@ import { auditService } from '../services/auditService.js';
 export const attendanceRouter = Router();
 
 // GET /api/attendance - Listar asistencias (todas o filtradas por fecha)
-attendanceRouter.get('/', (req, res) => {
+attendanceRouter.get('/', async (req, res) => {
   try {
-    const list = attendanceService.listAttendances(req.query.date as string | undefined);
+    const list = await attendanceService.listAttendances(req.query.date as string | undefined);
     res.json(list);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'No se pudo cargar la lista de asistencias.' });
+    console.error('[ATTENDANCE] list:', err.message);
   }
 });
 
 // POST /api/attendance/check-in - Marcaje de asistencia con bloqueo de vencidos (DP-003)
-attendanceRouter.post('/check-in', (req, res) => {
+attendanceRouter.post('/check-in', async (req, res) => {
   try {
     const { documentId, clientId, override, overrideReason, registeredBy } = req.body;
     let resolvedDoc = typeof documentId === 'string' ? documentId.trim() : '';
 
     if (!resolvedDoc && clientId) {
-      const client = clientService.getById(String(clientId));
+      const client = await clientService.getById(String(clientId));
       if (!client) {
         return res.status(404).json({ error: 'Miembro no encontrado.' });
       }
@@ -33,7 +34,7 @@ attendanceRouter.post('/check-in', (req, res) => {
       return res.status(400).json({ error: 'El número de documento o ID del miembro es obligatorio.' });
     }
 
-    const result = attendanceService.checkIn(
+    const result = await attendanceService.checkIn(
       resolvedDoc,
       Boolean(override),
       overrideReason,
@@ -41,7 +42,7 @@ attendanceRouter.post('/check-in', (req, res) => {
     );
 
     if (override && result.success) {
-      auditService.log(
+      await auditService.log(
         'OVERRIDE_CHECKIN',
         'Attendance',
         result.attendance?.id,
@@ -60,26 +61,29 @@ attendanceRouter.post('/check-in', (req, res) => {
 
     res.json(result);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'No se pudo registrar la asistencia.' });
+    console.error('[ATTENDANCE] check-in:', err.message);
   }
 });
 
 // GET /api/attendance/today - Asistencias registradas hoy
-attendanceRouter.get('/today', (_req, res) => {
+attendanceRouter.get('/today', async (_req, res) => {
   try {
-    const list = attendanceService.getTodayAttendances();
+    const list = await attendanceService.getTodayAttendances();
     res.json(list);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'No se pudieron cargar las asistencias de hoy.' });
+    console.error('[ATTENDANCE] today:', err.message);
   }
 });
 
 // GET /api/attendance/history/:clientId - Historial de un cliente
-attendanceRouter.get('/history/:clientId', (req, res) => {
+attendanceRouter.get('/history/:clientId', async (req, res) => {
   try {
-    const list = attendanceService.getClientHistory(req.params.clientId);
+    const list = await attendanceService.getClientHistory(req.params.clientId);
     res.json(list);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'No se pudo cargar el historial.' });
+    console.error('[ATTENDANCE] history:', err.message);
   }
 });

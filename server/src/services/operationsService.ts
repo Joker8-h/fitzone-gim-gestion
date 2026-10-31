@@ -1,14 +1,13 @@
-import { db } from '../db/database.js';
+import { query, queryOne, run } from '../db/database.js';
 import crypto from 'crypto';
 
 export const operationsService = {
   // --- CLASES (gym_classes) ---
-  listClasses() {
-    // @ts-ignore
-    return db.prepare('SELECT * FROM gym_classes ORDER BY schedule_time ASC').all() as any[];
+  async listClasses() {
+    return query('SELECT * FROM gym_classes ORDER BY schedule_time ASC');
   },
 
-  createClass(data: {
+  async createClass(data: {
     name: string;
     instructorName: string;
     scheduleTime: string;
@@ -18,10 +17,10 @@ export const operationsService = {
     status?: string;
   }) {
     const id = crypto.randomUUID();
-    db.prepare(`
+    await run(`
       INSERT INTO gym_classes (id, name, instructor_name, schedule_time, enrolled_count, capacity, color_theme, status)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
+    `, [
       id,
       data.name.trim(),
       data.instructorName.trim(),
@@ -30,33 +29,29 @@ export const operationsService = {
       data.capacity ?? 20,
       data.colorTheme || 'emerald',
       data.status || 'PROGRAMADA'
-    );
-    // @ts-ignore
-    return db.prepare('SELECT * FROM gym_classes WHERE id = ?').get(id);
+    ]);
+    return queryOne('SELECT * FROM gym_classes WHERE id = ?', [id]);
   },
 
-  updateClassEnrollment(id: string, delta: number) {
-    // @ts-ignore
-    const current = db.prepare('SELECT * FROM gym_classes WHERE id = ?').get(id) as any;
+  async updateClassEnrollment(id: string, delta: number) {
+    const current = await queryOne<any>('SELECT * FROM gym_classes WHERE id = ?', [id]);
     if (!current) throw new Error('Clase no encontrada');
     const nextCount = Math.max(0, Math.min(current.capacity, current.enrolled_count + delta));
-    db.prepare('UPDATE gym_classes SET enrolled_count = ? WHERE id = ?').run(nextCount, id);
-    // @ts-ignore
-    return db.prepare('SELECT * FROM gym_classes WHERE id = ?').get(id);
+    await run('UPDATE gym_classes SET enrolled_count = ? WHERE id = ?', [nextCount, id]);
+    return queryOne('SELECT * FROM gym_classes WHERE id = ?', [id]);
   },
 
-  deleteClass(id: string) {
-    db.prepare('DELETE FROM gym_classes WHERE id = ?').run(id);
+  async deleteClass(id: string) {
+    await run('DELETE FROM gym_classes WHERE id = ?', [id]);
     return { deleted: true };
   },
 
   // --- EVENTOS (gym_events) ---
-  listEvents() {
-    // @ts-ignore
-    return db.prepare('SELECT * FROM gym_events ORDER BY event_date ASC').all() as any[];
+  async listEvents() {
+    return query('SELECT * FROM gym_events ORDER BY event_date ASC');
   },
 
-  createEvent(data: {
+  async createEvent(data: {
     title: string;
     eventDate: string;
     dayNum: string;
@@ -64,33 +59,31 @@ export const operationsService = {
     timeRange: string;
   }) {
     const id = crypto.randomUUID();
-    db.prepare(`
+    await run(`
       INSERT INTO gym_events (id, title, event_date, day_num, month_short, time_range)
       VALUES (?, ?, ?, ?, ?, ?)
-    `).run(
+    `, [
       id,
       data.title.trim(),
       data.eventDate.trim(),
       data.dayNum.trim(),
       data.monthShort.trim().toUpperCase(),
       data.timeRange.trim()
-    );
-    // @ts-ignore
-    return db.prepare('SELECT * FROM gym_events WHERE id = ?').get(id);
+    ]);
+    return queryOne('SELECT * FROM gym_events WHERE id = ?', [id]);
   },
 
-  deleteEvent(id: string) {
-    db.prepare('DELETE FROM gym_events WHERE id = ?').run(id);
+  async deleteEvent(id: string) {
+    await run('DELETE FROM gym_events WHERE id = ?', [id]);
     return { deleted: true };
   },
 
   // --- EMPLEADOS (employees) ---
-  listEmployees() {
-    // @ts-ignore
-    return db.prepare('SELECT * FROM employees ORDER BY created_at DESC').all() as any[];
+  async listEmployees() {
+    return query('SELECT * FROM employees ORDER BY created_at DESC');
   },
 
-  createEmployee(data: {
+  async createEmployee(data: {
     fullName: string;
     role: string;
     specialty?: string;
@@ -98,43 +91,39 @@ export const operationsService = {
     salary?: number;
   }) {
     const id = crypto.randomUUID();
-    db.prepare(`
+    await run(`
       INSERT INTO employees (id, full_name, role, specialty, phone, salary, status)
       VALUES (?, ?, ?, ?, ?, ?, 'ACTIVO')
-    `).run(
+    `, [
       id,
       data.fullName.trim(),
       data.role.trim(),
       data.specialty?.trim() || 'General',
       data.phone.trim(),
       Number(data.salary) || 0
-    );
-    // @ts-ignore
-    return db.prepare('SELECT * FROM employees WHERE id = ?').get(id);
+    ]);
+    return queryOne('SELECT * FROM employees WHERE id = ?', [id]);
   },
 
-  toggleEmployeeStatus(id: string) {
-    // @ts-ignore
-    const current = db.prepare('SELECT * FROM employees WHERE id = ?').get(id) as any;
+  async toggleEmployeeStatus(id: string) {
+    const current = await queryOne<any>('SELECT * FROM employees WHERE id = ?', [id]);
     if (!current) throw new Error('Empleado no encontrado');
     const nextStatus = current.status === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
-    db.prepare('UPDATE employees SET status = ? WHERE id = ?').run(nextStatus, id);
-    // @ts-ignore
-    return db.prepare('SELECT * FROM employees WHERE id = ?').get(id);
+    await run('UPDATE employees SET status = ? WHERE id = ?', [nextStatus, id]);
+    return queryOne('SELECT * FROM employees WHERE id = ?', [id]);
   },
 
-  deleteEmployee(id: string) {
-    db.prepare('DELETE FROM employees WHERE id = ?').run(id);
+  async deleteEmployee(id: string) {
+    await run('DELETE FROM employees WHERE id = ?', [id]);
     return { deleted: true };
   },
 
   // --- EQUIPOS (equipment) ---
-  listEquipment() {
-    // @ts-ignore
-    return db.prepare('SELECT * FROM equipment ORDER BY created_at ASC').all() as any[];
+  async listEquipment() {
+    return query('SELECT * FROM equipment ORDER BY created_at ASC');
   },
 
-  createEquipment(data: {
+  async createEquipment(data: {
     name: string;
     category: string;
     status?: string;
@@ -142,32 +131,29 @@ export const operationsService = {
   }) {
     const id = crypto.randomUUID();
     const todayFormatted = new Date().toLocaleDateString('es-CO');
-    db.prepare(`
+    await run(`
       INSERT INTO equipment (id, name, category, status, last_maintenance)
       VALUES (?, ?, ?, ?, ?)
-    `).run(
+    `, [
       id,
       data.name.trim(),
       data.category.trim(),
       data.status || 'Disponible',
       data.lastMaintenance?.trim() || todayFormatted
-    );
-    // @ts-ignore
-    return db.prepare('SELECT * FROM equipment WHERE id = ?').get(id);
+    ]);
+    return queryOne('SELECT * FROM equipment WHERE id = ?', [id]);
   },
 
-  updateEquipmentStatus(id: string, status: string, lastMaintenance?: string) {
-    // @ts-ignore
-    const current = db.prepare('SELECT * FROM equipment WHERE id = ?').get(id) as any;
+  async updateEquipmentStatus(id: string, status: string, lastMaintenance?: string) {
+    const current = await queryOne<any>('SELECT * FROM equipment WHERE id = ?', [id]);
     if (!current) throw new Error('Equipo no encontrado');
     const maint = lastMaintenance || current.last_maintenance;
-    db.prepare('UPDATE equipment SET status = ?, last_maintenance = ? WHERE id = ?').run(status, maint, id);
-    // @ts-ignore
-    return db.prepare('SELECT * FROM equipment WHERE id = ?').get(id);
+    await run('UPDATE equipment SET status = ?, last_maintenance = ? WHERE id = ?', [status, maint, id]);
+    return queryOne('SELECT * FROM equipment WHERE id = ?', [id]);
   },
 
-  deleteEquipment(id: string) {
-    db.prepare('DELETE FROM equipment WHERE id = ?').run(id);
+  async deleteEquipment(id: string) {
+    await run('DELETE FROM equipment WHERE id = ?', [id]);
     return { deleted: true };
   }
 };

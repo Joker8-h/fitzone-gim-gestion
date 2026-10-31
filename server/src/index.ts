@@ -21,10 +21,6 @@ import { authRouter } from './routes/auth.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Inicializar DB y datos por defecto
-initDatabase();
-runSeed();
-
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -105,9 +101,21 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(publicPath, 'index.html'));
 });
 
-app.listen(Number(PORT), '0.0.0.0', () => {
-  console.log(`\n======================================================`);
-  console.log(`  FITZONE — Servidor Seguro y Endurecido (Fase 1)`);
-  console.log(`  Acceso Web: http://localhost:${PORT}`);
-  console.log(`======================================================\n`);
+// Arranque asíncrono: esquema + seed antes de aceptar tráfico
+async function bootstrap(): Promise<void> {
+  await initDatabase();
+  await runSeed();
+
+  app.listen(Number(PORT), '0.0.0.0', () => {
+    console.log(`\n======================================================`);
+    console.log(`  FITZONE — Servidor Seguro y Endurecido (Fase 2)`);
+    console.log(`  Base de datos: PostgreSQL`);
+    console.log(`  Acceso Web: http://localhost:${PORT}`);
+    console.log(`======================================================\n`);
+  });
+}
+
+bootstrap().catch((err) => {
+  console.error('[BOOT] Error fatal al iniciar el servidor:', err);
+  process.exit(1);
 });

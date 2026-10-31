@@ -1,4 +1,4 @@
-import { db } from '../db/database.js';
+import { query, run } from '../db/database.js';
 import crypto from 'crypto';
 
 export interface AuditEntry {
@@ -12,24 +12,24 @@ export interface AuditEntry {
 }
 
 export const auditService = {
-  log(action: string, entity: string, entityId?: string, details?: string, performedBy = 'Sistema') {
+  // Registro de auditoría: nunca debe romper el flujo principal
+  async log(action: string, entity: string, entityId?: string, details?: string, performedBy = 'Sistema'): Promise<void> {
     try {
       const id = crypto.randomUUID();
-      db.prepare(`
+      await run(`
         INSERT INTO audit_logs (id, action, entity, entity_id, details, performed_by)
         VALUES (?, ?, ?, ?, ?, ?)
-      `).run(id, action, entity, entityId || null, details || null, performedBy);
-    } catch (err) {
-      console.error('[AUDIT] Error guardando registro de auditoría:', err);
+      `, [id, action, entity, entityId || null, details || null, performedBy]);
+    } catch (err: any) {
+      console.error('[AUDIT] Error guardando registro de auditoría:', err.message);
     }
   },
 
-  getRecentLogs(limit = 50): AuditEntry[] {
-    // @ts-ignore
-    return db.prepare(`
+  async getRecentLogs(limit = 50): Promise<AuditEntry[]> {
+    return query<AuditEntry>(`
       SELECT * FROM audit_logs
       ORDER BY created_at DESC
       LIMIT ?
-    `).all(limit) as AuditEntry[];
+    `, [limit]);
   }
 };

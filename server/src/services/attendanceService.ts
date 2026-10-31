@@ -1,5 +1,5 @@
-import { db } from '../db/database.js';
-import { membershipService, getTodayString } from './membershipService.js';
+import { query, queryOne, run } from '../db/database.js';
+import { membershipService } from './membershipService.js';
 import { clientService } from './clientService.js';
 import crypto from 'crypto';
 
@@ -26,8 +26,8 @@ export interface CheckInResult {
 
 export const attendanceService = {
   // Marcaje de asistencia con regla estricta DP-003 (Bloqueo si está vencida)
-  checkIn(documentId: string, override = false, overrideReason?: string, registeredBy = 'Recepción'): CheckInResult {
-    const client = clientService.getByDocument(documentId);
+  async checkIn(documentId: string, override = false, overrideReason?: string, registeredBy = 'Recepción'): Promise<CheckInResult> {
+    const client = await clientService.getByDocument(documentId);
     if (!client) {
       return {
         success: false,
@@ -46,7 +46,7 @@ export const attendanceService = {
     }
 
     // Obtener membresía activa
-    const membership = membershipService.getLatestMembership(client.id);
+    const membership = await membershipService.getLatestMembership(client.id);
 
     // Si no tiene membresía o está vencida
     const isExpired = !membership || membership.status === 'VENCIDA';
@@ -66,13 +66,12 @@ export const attendanceService = {
     }
 
     // RF-011: Prevenir doble registro accidental (en los últimos 15 minutos)
-    // @ts-ignore
-    const recent = db.prepare(`
+    const recent = await queryOne<any>(`
       SELECT * FROM attendances
-      WHERE client_id = ? AND check_in_time >= datetime('now', 'localtime', '-15 minutes')
+      WHERE client_id = ? AND check_in_time >= to_char(localtimestamp - interval '15 minutes', 'YYYY-MM-DD HH24:MI:SS')
       ORDER BY check_in_time DESC
       LIMIT 1
-    `).get(client.id) as any;
+    `, [client.id]);
 
     if (recent && !override) {
       return {
@@ -86,19 +85,18 @@ export const attendanceService = {
 
     // Registrar asistencia
     const attendanceId = crypto.randomUUID();
-    db.prepare(`
+    await run(`
       INSERT INTO attendances (id, client_id, was_overridden, override_reason, registered_by)
       VALUES (?, ?, ?, ?, ?)
-    `).run(
+    `, [
       attendanceId,
       client.id,
       override ? 1 : 0,
       override ? (overrideReason?.trim() || 'Ingreso autorizado manualmente') : null,
       registeredBy
-    );
+    ]);
 
-    // @ts-ignore
-    const attendance = db.prepare('SELECT * FROM attendances WHERE id = ?').get(attendanceId) as AttendanceRecord;
+    const attendance = (await queryOne<AttendanceRecord>('SELECT * FROM attendances WHERE id = ?', [attendanceId]))!;
 
     let warning = '';
     if (membership && membership.status === 'POR_VENCER') {
@@ -118,21 +116,19 @@ export const attendanceService = {
   },
 
   // Asistencias registradas (todas o filtradas por fecha)
-  listAttendances(date?: string): (AttendanceRecord & { status: string; plan_name?: string })[] {
+  async listAttendances(date?: string): Promise<(AttendanceRecord & { status: string; plan_name?: string })[]> {
     if (date && date.trim() !== '') {
-      // @ts-ignore
-      return db.prepare(`
+      return query(`
         SELECT 
           a.id, a.client_id, a.check_in_time, a.was_overridden, a.override_reason, a.registered_by,
           c.full_name, c.document_id, c.phone
         FROM attendances a
         JOIN clients c ON a.client_id = c.id
-        WHERE date(a.check_in_time) = ?
+        WHERE substring(a.check_in_time from 1 for 10) = ?
         ORDER BY a.check_in_time DESC
-      `).all(date.trim()) as any[];
+      `, [date.trim()]);
     }
-    // @ts-ignore
-    return db.prepare(`
+    return query(`
       SELECT 
         a.id, a.client_id, a.check_in_time, a.was_overridden, a.override_reason, a.registered_by,
         c.full_name, c.document_id, c.phone
@@ -140,30 +136,28 @@ export const attendanceService = {
       JOIN clients c ON a.client_id = c.id
       ORDER BY a.check_in_time DESC
       LIMIT 150
-    `).all() as any[];
+    `);
   },
 
   // Asistencias registradas hoy
-  getTodayAttendances(): (AttendanceRecord & { status: string; plan_name?: string })[] {
-    // @ts-ignore
-    return db.prepare(`
+  async getTodayAttendances(): Promise<(AttendanceRecord & { status: string; plan_name?: string })[]> {
+    return query(`
       SELECT 
         a.id, a.client_id, a.check_in_time, a.was_overridden, a.override_reason, a.registered_by,
         c.full_name, c.document_id, c.phone
       FROM attendances a
       JOIN clients c ON a.client_id = c.id
-      WHERE date(a.check_in_time) = date('now', 'localtime')
+      WHERE substring(a.check_in_time from 1 for 10) = to_char(localtimestamp, 'YYYY-MM-DD')
       ORDER BY a.check_in_time DESC
-    `).all() as any[];
+    `);
   },
 
   // Historial de un cliente
-  getClientHistory(clientId: string): AttendanceRecord[] {
-    // @ts-ignore
-    return db.prepare(`
+  async getClientHistory(clientId: string): Promise<AttendanceRecord[]> {
+    return query<AttendanceRecord>(`
       SELECT * FROM attendances
       WHERE client_id = ?
       ORDER BY check_in_time DESC
-    `).all(clientId) as AttendanceRecord[];
+    `, [clientId]);
   }
 };

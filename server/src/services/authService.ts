@@ -1,4 +1,4 @@
-import { db } from '../db/database.js';
+import { queryOne, query, run } from '../db/database.js';
 import crypto from 'crypto';
 import { auditService } from './auditService.js';
 
@@ -62,6 +62,7 @@ export function signToken(user: AuthUser): string {
   return `${base64Payload}.${signature}`;
 }
 
+// Verificación pura (sin BD): mantiene firma síncrona para el middleware de sesión
 export function verifyToken(token: string): AuthUser | null {
   try {
     const [base64Payload, signature] = token.split('.');
@@ -93,26 +94,28 @@ export function verifyToken(token: string): AuthUser | null {
 }
 
 export const authService = {
-  ensureDefaultUsers() {
-    // Asegurar que exista el usuario admin con hash seguro scrypt.
-    // La contraseña inicial proviene de ADMIN_INITIAL_PASSWORD; si no está definida
-    // se genera una aleatoria que se imprime UNA sola vez en consola.
-    // @ts-ignore
-    const existing = db.prepare('SELECT * FROM users WHERE email = ? OR email = ?').get('admin@fitzone.com', 'admin@gimnasio.com') as any;
+  // Asegura que exista el usuario admin con hash seguro scrypt.
+  // La contraseña inicial proviene de ADMIN_INITIAL_PASSWORD; si no está definida
+  // se genera una aleatoria que se imprime UNA sola vez en consola.
+  async ensureDefaultUsers(): Promise<void> {
+    const existing = await queryOne<any>(
+      'SELECT * FROM users WHERE email = ? OR email = ?',
+      ['admin@fitzone.com', 'admin@gimnasio.com']
+    );
     if (!existing) {
       const envPassword = process.env.ADMIN_INITIAL_PASSWORD;
       const initialPassword = envPassword && envPassword.length >= 8
         ? envPassword
         : crypto.randomBytes(12).toString('base64url');
-      db.prepare(`
+      await run(`
         INSERT INTO users (id, name, email, password, role)
         VALUES (?, ?, ?, ?, 'ADMIN')
-      `).run(
+      `, [
         crypto.randomUUID(),
         'Administrador FITZONE',
         'admin@fitzone.com',
         hashPassword(initialPassword)
-      );
+      ]);
       console.log('========================================================');
       console.log('  USUARIO ADMINISTRADOR INICIAL CREADO');
       console.log('  Usuario:  admin@fitzone.com');
@@ -124,37 +127,36 @@ export const authService = {
       }
       console.log('========================================================');
     } else if (!String(existing.password).startsWith('scrypt:')) {
-      db.prepare('UPDATE users SET password = ? WHERE id = ?').run(
+      await run('UPDATE users SET password = ? WHERE id = ?', [
         hashPassword(existing.password),
         existing.id
-      );
+      ]);
     }
   },
 
-  login(identifier: string, password: string): { token: string; user: AuthUser } {
-    this.ensureDefaultUsers();
+  async login(identifier: string, password: string): Promise<{ token: string; user: AuthUser }> {
+    await this.ensureDefaultUsers();
     const cleanId = identifier.trim().toLowerCase();
 
     // Permitir ingresar con 'admin', 'admin@fitzone.com', 'admin@gimnasio.com' o el nombre/correo del usuario
     let row: any;
     if (cleanId === 'admin') {
-      // @ts-ignore
-      row = db.prepare("SELECT * FROM users WHERE role = 'ADMIN' LIMIT 1").get();
+      row = await queryOne<any>("SELECT * FROM users WHERE role = 'ADMIN' LIMIT 1");
     } else {
-      // @ts-ignore
-      row = db
-        .prepare('SELECT * FROM users WHERE LOWER(email) = ? OR LOWER(name) = ? LIMIT 1')
-        .get(cleanId, cleanId);
+      row = await queryOne<any>(
+        'SELECT * FROM users WHERE LOWER(email) = ? OR LOWER(name) = ? LIMIT 1',
+        [cleanId, cleanId]
+      );
     }
 
     if (!row || !verifyPassword(password, row.password)) {
-      auditService.log('LOGIN_FAILED', 'Auth', undefined, `Intento fallido para usuario: ${cleanId}`, cleanId);
+      await auditService.log('LOGIN_FAILED', 'Auth', undefined, `Intento fallido para usuario: ${cleanId}`, cleanId);
       throw new Error('Usuario o contraseña incorrectos. Verifica tus credenciales.');
     }
 
     // Si la contraseña estaba sin hash scrypt, actualizarla automáticamente
     if (!String(row.password).startsWith('scrypt:')) {
-      db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashPassword(password), row.id);
+      await run('UPDATE users SET password = ? WHERE id = ?', [hashPassword(password), row.id]);
     }
 
     const user: AuthUser = {
@@ -165,24 +167,22 @@ export const authService = {
     };
 
     const token = signToken(user);
-    auditService.log('LOGIN_SUCCESS', 'Auth', user.id, `Inicio de sesión exitoso: ${user.name} (${user.email})`, user.name);
+    await auditService.log('LOGIN_SUCCESS', 'Auth', user.id, `Inicio de sesión exitoso: ${user.name} (${user.email})`, user.name);
 
     return { token, user };
   },
 
-  listUsers(): Array<{ id: string; name: string; email: string; role: string; created_at: string }> {
-    this.ensureDefaultUsers();
-    // @ts-ignore
-    return db.prepare('SELECT id, name, email, role, created_at FROM users ORDER BY created_at ASC').all() as any[];
+  async listUsers(): Promise<Array<{ id: string; name: string; email: string; role: string; created_at: string }>> {
+    await this.ensureDefaultUsers();
+    return query('SELECT id, name, email, role, created_at FROM users ORDER BY created_at ASC');
   },
 
-  createUser(data: { name: string; email: string; password: string; role?: string }) {
+  async createUser(data: { name: string; email: string; password: string; role?: string }) {
     const cleanEmail = data.email.trim().toLowerCase();
     if (data.password.length < 6) {
       throw new Error('La contraseña debe tener al menos 6 caracteres.');
     }
-    // @ts-ignore
-    const exists = db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(cleanEmail);
+    const exists = await queryOne('SELECT id FROM users WHERE LOWER(email) = ?', [cleanEmail]);
     if (exists) {
       throw new Error(`Ya existe un usuario registrado con el correo/usuario ${cleanEmail}`);
     }
@@ -191,12 +191,12 @@ export const authService = {
     const hashed = hashPassword(data.password);
     const role = data.role || 'RECEPCION';
 
-    db.prepare(`
+    await run(`
       INSERT INTO users (id, name, email, password, role)
       VALUES (?, ?, ?, ?, ?)
-    `).run(id, data.name.trim(), cleanEmail, hashed, role);
+    `, [id, data.name.trim(), cleanEmail, hashed, role]);
 
-    auditService.log('CREATE_USER', 'User', id, `Usuario del sistema creado: ${data.name} (${cleanEmail}) - Rol: ${role}`, 'Admin');
+    await auditService.log('CREATE_USER', 'User', id, `Usuario del sistema creado: ${data.name} (${cleanEmail}) - Rol: ${role}`, 'Admin');
 
     return {
       id,
@@ -206,13 +206,12 @@ export const authService = {
     };
   },
 
-  deleteUser(id: string) {
-    // @ts-ignore
-    const count = (db.prepare('SELECT COUNT(*) as c FROM users').get() as any)?.c || 1;
+  async deleteUser(id: string) {
+    const count = (await queryOne<{ c: number }>('SELECT COUNT(*) as c FROM users'))?.c || 1;
     if (count <= 1) {
       throw new Error('No puedes eliminar el único usuario administrador del sistema.');
     }
-    db.prepare('DELETE FROM users WHERE id = ?').run(id);
+    await run('DELETE FROM users WHERE id = ?', [id]);
     return { deleted: true };
   },
 };

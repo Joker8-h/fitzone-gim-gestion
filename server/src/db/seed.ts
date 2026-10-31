@@ -1,13 +1,14 @@
-import { db, initDatabase } from './database.js';
+import { initDatabase, run } from './database.js';
+import { queryOne } from './database.js';
 import crypto from 'crypto';
 import { authService } from '../services/authService.js';
 
-export function runSeed() {
-  initDatabase();
+export async function runSeed(): Promise<void> {
+  await initDatabase();
   console.log('[SEED] Inicializando sistema FITZONE en blanco (desde cero)...');
 
   // 1. Asegurar únicamente el usuario Administrador para poder iniciar sesión
-  authService.ensureDefaultUsers();
+  await authService.ensureDefaultUsers();
 
   // 2. Categorías base del sistema (requeridas para clasificar pagos de membresías y egresos sin datos de prueba)
   const categories = [
@@ -23,12 +24,12 @@ export function runSeed() {
   ];
 
   for (const cat of categories) {
-    const existing = db.prepare('SELECT id FROM financial_categories WHERE name = ?').get(cat.name);
+    const existing = await queryOne('SELECT id FROM financial_categories WHERE name = ?', [cat.name]);
     if (!existing) {
-      db.prepare(`
+      await run(`
         INSERT INTO financial_categories (id, name, type, is_system)
         VALUES (?, ?, ?, ?)
-      `).run(crypto.randomUUID(), cat.name, cat.type, cat.is_system);
+      `, [crypto.randomUUID(), cat.name, cat.type, cat.is_system]);
     }
   }
 
@@ -51,48 +52,42 @@ export function runSeed() {
   ];
 
   for (const rule of rules) {
-    const existing = db.prepare('SELECT id FROM tracking_rules WHERE rule_type = ?').get(rule.rule_type);
+    const existing = await queryOne('SELECT id FROM tracking_rules WHERE rule_type = ?', [rule.rule_type]);
     if (!existing) {
-      db.prepare(`
+      await run(`
         INSERT INTO tracking_rules (id, rule_type, threshold_days, is_enabled, message_template)
         VALUES (?, ?, ?, ?, ?)
-      `).run(
+      `, [
         crypto.randomUUID(),
         rule.rule_type,
         rule.threshold_days,
         rule.is_enabled,
         rule.message_template
-      );
+      ]);
     } else {
-      db.prepare(`
+      await run(`
         UPDATE tracking_rules SET message_template = ? WHERE rule_type = ?
-      `).run(rule.message_template, rule.rule_type);
+      `, [rule.message_template, rule.rule_type]);
     }
   }
 
   console.log('[SEED] Sistema listo y en blanco (0 miembros, 0 pagos, 0 clases, 0 equipos).');
 }
 
-export function clearAllDataToZero() {
-  initDatabase();
-  db.exec(`
-    DELETE FROM communication_logs;
-    DELETE FROM audit_logs;
-    DELETE FROM financial_transactions;
-    DELETE FROM payments;
-    DELETE FROM attendances;
-    DELETE FROM client_memberships;
-    DELETE FROM clients;
-    DELETE FROM membership_plans;
-    DELETE FROM gym_classes;
-    DELETE FROM gym_events;
-    DELETE FROM employees;
-    DELETE FROM equipment;
+export async function clearAllDataToZero(): Promise<void> {
+  await initDatabase();
+  await run(`
+    TRUNCATE communication_logs, audit_logs, financial_transactions, payments,
+      attendances, client_memberships, clients, membership_plans, gym_classes,
+      gym_events, employees, equipment CASCADE;
   `);
-  runSeed();
+  await runSeed();
   console.log('[RESET] Base de datos limpiada completamente a cero.');
 }
 
 if (process.argv[1] && process.argv[1].endsWith('seed.ts')) {
-  clearAllDataToZero();
+  clearAllDataToZero().then(() => process.exit(0)).catch((err) => {
+    console.error('[SEED] Error:', err);
+    process.exit(1);
+  });
 }

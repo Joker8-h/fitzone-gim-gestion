@@ -17,14 +17,14 @@ authRouter.post(
     maxRequests: 25,
     message: 'Demasiados intentos de inicio de sesión. Espera unos minutos.',
   }),
-  (req, res) => {
+  (async (req, res) => {
     try {
       const { username, password } = req.body;
       if (!username || !password) {
         return res.status(400).json({ error: 'Debes ingresar tu usuario/correo y contraseña.' });
       }
 
-      const { token, user } = authService.login(String(username), String(password));
+      const { token, user } = await authService.login(String(username), String(password));
 
       // La sesión viaja SOLO en cookie HttpOnly (nunca en el body de la respuesta)
       res.setHeader('Set-Cookie', `fitzone_token=${encodeURIComponent(token)}; ${cookieAttrs}`);
@@ -33,7 +33,7 @@ authRouter.post(
     } catch (err: any) {
       res.status(401).json({ error: err.message });
     }
-  }
+  })
 );
 
 // POST /api/auth/logout - Cerrar sesión
@@ -56,9 +56,9 @@ authRouter.get('/me', (req, res) => {
 });
 
 // Gestión de usuarios del sistema: solo ADMIN
-authRouter.get('/users', requireAuth, requireRole('ADMIN'), (_req, res) => {
+authRouter.get('/users', requireAuth, requireRole('ADMIN'), async (_req, res) => {
   try {
-    res.json(authService.listUsers());
+    res.json(await authService.listUsers());
   } catch (err: any) {
     res.status(500).json({ error: 'No se pudieron listar los usuarios.' });
     console.error('[AUTH] listUsers:', err.message);
@@ -66,13 +66,13 @@ authRouter.get('/users', requireAuth, requireRole('ADMIN'), (_req, res) => {
 });
 
 // POST /api/auth/users - Crear nuevo usuario con contraseña para ingresar al sistema
-authRouter.post('/users', requireAuth, requireRole('ADMIN'), (req, res) => {
+authRouter.post('/users', requireAuth, requireRole('ADMIN'), async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'Nombre, usuario/correo y contraseña son obligatorios.' });
     }
-    const created = authService.createUser({ name, email, password, role });
+    const created = await authService.createUser({ name, email, password, role });
     res.status(201).json(created);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -80,9 +80,9 @@ authRouter.post('/users', requireAuth, requireRole('ADMIN'), (req, res) => {
 });
 
 // DELETE /api/auth/users/:id - Eliminar usuario
-authRouter.delete('/users/:id', requireAuth, requireRole('ADMIN'), (req, res) => {
+authRouter.delete('/users/:id', requireAuth, requireRole('ADMIN'), async (req, res) => {
   try {
-    res.json(authService.deleteUser(req.params.id as string));
+    res.json(await authService.deleteUser(req.params.id as string));
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }

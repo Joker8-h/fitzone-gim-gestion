@@ -1,4 +1,4 @@
-import { db } from '../db/database.js';
+import { query, queryOne, run } from '../db/database.js';
 import { getTodayString } from './membershipService.js';
 import crypto from 'crypto';
 
@@ -19,8 +19,8 @@ export interface Client {
 }
 
 export const clientService = {
-  list(search?: string, status?: string): Client[] {
-    let query = `
+  async list(search?: string, status?: string): Promise<Client[]> {
+    let sql = `
       SELECT 
         c.*,
         (
@@ -47,19 +47,18 @@ export const clientService = {
     const params: any[] = [];
 
     if (status) {
-      query += ' AND c.status = ?';
+      sql += ' AND c.status = ?';
       params.push(status);
     }
 
     if (search && search.trim() !== '') {
       const term = `%${search.trim()}%`;
-      query += ' AND (c.document_id LIKE ? OR c.full_name LIKE ? OR c.phone LIKE ?)';
+      sql += ' AND (c.document_id LIKE ? OR c.full_name LIKE ? OR c.phone LIKE ?)';
       params.push(term, term, term);
     }
 
-    query += ' ORDER BY c.created_at DESC';
-    // @ts-ignore
-    const rows = db.prepare(query).all(...params) as Client[];
+    sql += ' ORDER BY c.created_at DESC';
+    const rows = await query<Client>(sql, params);
     const today = getTodayString();
 
     return rows.map(r => {
@@ -79,18 +78,16 @@ export const clientService = {
     });
   },
 
-  getById(id: string): Client | undefined {
-    // @ts-ignore
-    return db.prepare('SELECT * FROM clients WHERE id = ?').get(id) as Client | undefined;
+  async getById(id: string): Promise<Client | null> {
+    return queryOne<Client>('SELECT * FROM clients WHERE id = ?', [id]);
   },
 
-  getByDocument(documentId: string): Client | undefined {
-    // @ts-ignore
-    return db.prepare('SELECT * FROM clients WHERE document_id = ?').get(documentId.trim()) as Client | undefined;
+  async getByDocument(documentId: string): Promise<Client | null> {
+    return queryOne<Client>('SELECT * FROM clients WHERE document_id = ?', [documentId.trim()]);
   },
 
-  create(data: { documentId: string; fullName: string; phone: string; notes?: string }): Client {
-    const existing = this.getByDocument(data.documentId);
+  async create(data: { documentId: string; fullName: string; phone: string; notes?: string }): Promise<Client> {
+    const existing = await this.getByDocument(data.documentId);
     if (existing) {
       throw new Error(`Ya existe un miembro registrado con el documento ${data.documentId} (${existing.full_name})`);
     }
@@ -98,16 +95,16 @@ export const clientService = {
     const id = crypto.randomUUID();
     const now = getTodayString();
 
-    db.prepare(`
+    await run(`
       INSERT INTO clients (id, document_id, full_name, phone, registration_date, status, notes)
       VALUES (?, ?, ?, ?, ?, 'ACTIVO', ?)
-    `).run(id, data.documentId.trim(), data.fullName.trim(), data.phone.trim(), now, data.notes?.trim() || null);
+    `, [id, data.documentId.trim(), data.fullName.trim(), data.phone.trim(), now, data.notes?.trim() || null]);
 
-    return this.getById(id)!;
+    return (await this.getById(id))!;
   },
 
-  update(id: string, data: { fullName?: string; phone?: string; notes?: string; status?: string }): Client {
-    const current = this.getById(id);
+  async update(id: string, data: { fullName?: string; phone?: string; notes?: string; status?: string }): Promise<Client> {
+    const current = await this.getById(id);
     if (!current) {
       throw new Error('Miembro no encontrado');
     }
@@ -117,21 +114,21 @@ export const clientService = {
     const notes = data.notes !== undefined ? (data.notes.trim() || null) : (current.notes || null);
     const status = data.status !== undefined ? data.status : current.status;
 
-    db.prepare(`
+    await run(`
       UPDATE clients
-      SET full_name = ?, phone = ?, notes = ?, status = ?, updated_at = datetime('now', 'localtime')
+      SET full_name = ?, phone = ?, notes = ?, status = ?, updated_at = to_char(localtimestamp, 'YYYY-MM-DD HH24:MI:SS')
       WHERE id = ?
-    `).run(fullName, phone, notes, status, id);
+    `, [fullName, phone, notes, status, id]);
 
-    return this.getById(id)!;
+    return (await this.getById(id))!;
   },
 
-  deactivate(id: string): Client {
+  async deactivate(id: string): Promise<Client> {
     return this.update(id, { status: 'INACTIVO' });
   },
 
-  delete(id: string) {
-    db.prepare('DELETE FROM clients WHERE id = ?').run(id);
+  async delete(id: string) {
+    await run('DELETE FROM clients WHERE id = ?', [id]);
     return { deleted: true };
   }
 };

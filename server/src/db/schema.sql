@@ -1,4 +1,6 @@
-PRAGMA foreign_keys = ON;
+-- Esquema PostgreSQL para FITZONE (Fase 2 — migración desde SQLite)
+-- Los TEXT con fechas conservan el formato 'YYYY-MM-DD HH24:MI:SS' / 'YYYY-MM-DD'
+-- que espera toda la capa de aplicación.
 
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
@@ -6,8 +8,8 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'ADMIN',
-  created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+  created_at TEXT NOT NULL DEFAULT to_char(localtimestamp, 'YYYY-MM-DD HH24:MI:SS'),
+  updated_at TEXT NOT NULL DEFAULT to_char(localtimestamp, 'YYYY-MM-DD HH24:MI:SS')
 );
 
 CREATE TABLE IF NOT EXISTS clients (
@@ -17,11 +19,11 @@ CREATE TABLE IF NOT EXISTS clients (
   phone TEXT NOT NULL,
   email TEXT,
   avatar_url TEXT,
-  registration_date TEXT NOT NULL DEFAULT (date('now', 'localtime')),
+  registration_date TEXT NOT NULL DEFAULT to_char(localtimestamp, 'YYYY-MM-DD'),
   status TEXT NOT NULL DEFAULT 'ACTIVO',
   notes TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+  created_at TEXT NOT NULL DEFAULT to_char(localtimestamp, 'YYYY-MM-DD HH24:MI:SS'),
+  updated_at TEXT NOT NULL DEFAULT to_char(localtimestamp, 'YYYY-MM-DD HH24:MI:SS')
 );
 
 CREATE TABLE IF NOT EXISTS membership_plans (
@@ -31,7 +33,7 @@ CREATE TABLE IF NOT EXISTS membership_plans (
   price REAL NOT NULL,
   description TEXT,
   is_active INTEGER NOT NULL DEFAULT 1,
-  created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+  created_at TEXT NOT NULL DEFAULT to_char(localtimestamp, 'YYYY-MM-DD HH24:MI:SS')
 );
 
 CREATE TABLE IF NOT EXISTS client_memberships (
@@ -42,7 +44,7 @@ CREATE TABLE IF NOT EXISTS client_memberships (
   end_date TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'VIGENTE',
   price_paid REAL NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+  created_at TEXT NOT NULL DEFAULT to_char(localtimestamp, 'YYYY-MM-DD HH24:MI:SS')
 );
 
 CREATE TABLE IF NOT EXISTS payments (
@@ -53,13 +55,13 @@ CREATE TABLE IF NOT EXISTS payments (
   payment_method TEXT NOT NULL,
   reference TEXT,
   notes TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+  created_at TEXT NOT NULL DEFAULT to_char(localtimestamp, 'YYYY-MM-DD HH24:MI:SS')
 );
 
 CREATE TABLE IF NOT EXISTS attendances (
   id TEXT PRIMARY KEY,
   client_id TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
-  check_in_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+  check_in_time TEXT NOT NULL DEFAULT to_char(localtimestamp, 'YYYY-MM-DD HH24:MI:SS'),
   was_overridden INTEGER NOT NULL DEFAULT 0,
   override_reason TEXT,
   registered_by TEXT
@@ -70,7 +72,7 @@ CREATE TABLE IF NOT EXISTS financial_categories (
   name TEXT NOT NULL,
   type TEXT NOT NULL,
   is_system INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+  created_at TEXT NOT NULL DEFAULT to_char(localtimestamp, 'YYYY-MM-DD HH24:MI:SS')
 );
 
 CREATE TABLE IF NOT EXISTS financial_transactions (
@@ -79,10 +81,10 @@ CREATE TABLE IF NOT EXISTS financial_transactions (
   category_id TEXT REFERENCES financial_categories(id),
   concept TEXT NOT NULL,
   amount REAL NOT NULL,
-  date TEXT NOT NULL DEFAULT (date('now', 'localtime')),
+  date TEXT NOT NULL DEFAULT to_char(localtimestamp, 'YYYY-MM-DD'),
   payment_id TEXT UNIQUE REFERENCES payments(id) ON DELETE CASCADE,
   registered_by TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+  created_at TEXT NOT NULL DEFAULT to_char(localtimestamp, 'YYYY-MM-DD HH24:MI:SS')
 );
 
 CREATE TABLE IF NOT EXISTS employees (
@@ -93,7 +95,7 @@ CREATE TABLE IF NOT EXISTS employees (
   phone TEXT NOT NULL,
   salary REAL NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'ACTIVO',
-  created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+  created_at TEXT NOT NULL DEFAULT to_char(localtimestamp, 'YYYY-MM-DD HH24:MI:SS')
 );
 
 CREATE TABLE IF NOT EXISTS gym_classes (
@@ -105,7 +107,7 @@ CREATE TABLE IF NOT EXISTS gym_classes (
   capacity INTEGER NOT NULL DEFAULT 20,
   color_theme TEXT NOT NULL DEFAULT 'emerald',
   status TEXT NOT NULL DEFAULT 'PROGRAMADA',
-  created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+  created_at TEXT NOT NULL DEFAULT to_char(localtimestamp, 'YYYY-MM-DD HH24:MI:SS')
 );
 
 CREATE TABLE IF NOT EXISTS gym_events (
@@ -115,7 +117,7 @@ CREATE TABLE IF NOT EXISTS gym_events (
   day_num TEXT NOT NULL,
   month_short TEXT NOT NULL,
   time_range TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+  created_at TEXT NOT NULL DEFAULT to_char(localtimestamp, 'YYYY-MM-DD HH24:MI:SS')
 );
 
 CREATE TABLE IF NOT EXISTS equipment (
@@ -124,7 +126,7 @@ CREATE TABLE IF NOT EXISTS equipment (
   category TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'Disponible',
   last_maintenance TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+  created_at TEXT NOT NULL DEFAULT to_char(localtimestamp, 'YYYY-MM-DD HH24:MI:SS')
 );
 
 CREATE TABLE IF NOT EXISTS tracking_rules (
@@ -133,7 +135,7 @@ CREATE TABLE IF NOT EXISTS tracking_rules (
   threshold_days INTEGER NOT NULL,
   is_enabled INTEGER NOT NULL DEFAULT 1,
   message_template TEXT NOT NULL,
-  updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+  updated_at TEXT NOT NULL DEFAULT to_char(localtimestamp, 'YYYY-MM-DD HH24:MI:SS')
 );
 
 CREATE TABLE IF NOT EXISTS communication_logs (
@@ -142,7 +144,7 @@ CREATE TABLE IF NOT EXISTS communication_logs (
   rule_type TEXT NOT NULL,
   message TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'SENT',
-  sent_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+  sent_at TEXT NOT NULL DEFAULT to_char(localtimestamp, 'YYYY-MM-DD HH24:MI:SS'),
   response_info TEXT
 );
 
@@ -153,5 +155,5 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   entity_id TEXT,
   details TEXT,
   performed_by TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+  created_at TEXT NOT NULL DEFAULT to_char(localtimestamp, 'YYYY-MM-DD HH24:MI:SS')
 );

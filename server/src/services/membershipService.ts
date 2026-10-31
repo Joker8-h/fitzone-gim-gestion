@@ -1,4 +1,4 @@
-import { db } from '../db/database.js';
+import { query, queryOne, run, withTransaction } from '../db/database.js';
 import crypto from 'crypto';
 
 export interface MembershipPlan {
@@ -34,7 +34,7 @@ export interface PaymentRecord {
   created_at: string;
 }
 
-// Helpers para fechas locales (formato YYYY-MM-DD sincronizado con SQLite localtime)
+// Helpers para fechas locales (formato YYYY-MM-DD consistente con el resto del sistema)
 export function getTodayString(): string {
   const d = new Date();
   const y = d.getFullYear();
@@ -60,30 +60,28 @@ export function daysBetween(dateStrA: string, dateStrB: string): number {
 }
 
 export const membershipService = {
-  getPlans(onlyActive = true): MembershipPlan[] {
+  async getPlans(onlyActive = true): Promise<MembershipPlan[]> {
     const sql = onlyActive
       ? 'SELECT * FROM membership_plans WHERE is_active = 1 ORDER BY price ASC'
       : 'SELECT * FROM membership_plans ORDER BY is_active DESC, price ASC';
-    // @ts-ignore
-    return db.prepare(sql).all() as MembershipPlan[];
+    return query<MembershipPlan>(sql);
   },
 
-  getPlanById(id: string): MembershipPlan | undefined {
-    // @ts-ignore
-    return db.prepare('SELECT * FROM membership_plans WHERE id = ?').get(id) as MembershipPlan | undefined;
+  async getPlanById(id: string): Promise<MembershipPlan | null> {
+    return queryOne<MembershipPlan>('SELECT * FROM membership_plans WHERE id = ?', [id]);
   },
 
-  createPlan(data: { name: string; durationDays: number; price: number; description?: string }): MembershipPlan {
+  async createPlan(data: { name: string; durationDays: number; price: number; description?: string }): Promise<MembershipPlan> {
     const id = crypto.randomUUID();
-    db.prepare(`
+    await run(`
       INSERT INTO membership_plans (id, name, duration_days, price, description, is_active)
       VALUES (?, ?, ?, ?, ?, 1)
-    `).run(id, data.name.trim(), data.durationDays, data.price, data.description?.trim() || null);
-    return this.getPlanById(id)!;
+    `, [id, data.name.trim(), data.durationDays, data.price, data.description?.trim() || null]);
+    return (await this.getPlanById(id))!;
   },
 
-  updatePlan(id: string, data: { name?: string; durationDays?: number; price?: number; description?: string; isActive?: boolean }): MembershipPlan {
-    const current = this.getPlanById(id);
+  async updatePlan(id: string, data: { name?: string; durationDays?: number; price?: number; description?: string; isActive?: boolean }): Promise<MembershipPlan> {
+    const current = await this.getPlanById(id);
     if (!current) throw new Error('Plan no encontrado');
 
     const name = data.name !== undefined ? data.name.trim() : current.name;
@@ -92,38 +90,36 @@ export const membershipService = {
     const description = data.description !== undefined ? (data.description.trim() || null) : (current.description || null);
     const isActive = data.isActive !== undefined ? (data.isActive ? 1 : 0) : current.is_active;
 
-    db.prepare(`
+    await run(`
       UPDATE membership_plans
       SET name = ?, duration_days = ?, price = ?, description = ?, is_active = ?
       WHERE id = ?
-    `).run(name, durationDays, price, description, isActive, id);
+    `, [name, durationDays, price, description, isActive, id]);
 
-    return this.getPlanById(id)!;
+    return (await this.getPlanById(id))!;
   },
 
-  deletePlan(id: string) {
+  async deletePlan(id: string) {
     // Si tiene membresías asociadas, desactivar lógicamente; si no, eliminar físicamente
-    // @ts-ignore
-    const used = (db.prepare('SELECT COUNT(*) as c FROM client_memberships WHERE plan_id = ?').get(id) as any)?.c || 0;
+    const used = (await queryOne<{ c: number }>('SELECT COUNT(*) as c FROM client_memberships WHERE plan_id = ?', [id]))?.c || 0;
     if (used > 0) {
-      db.prepare('UPDATE membership_plans SET is_active = 0 WHERE id = ?').run(id);
+      await run('UPDATE membership_plans SET is_active = 0 WHERE id = ?', [id]);
     } else {
-      db.prepare('DELETE FROM membership_plans WHERE id = ?').run(id);
+      await run('DELETE FROM membership_plans WHERE id = ?', [id]);
     }
     return { deleted: true };
   },
 
   // Obtiene el estado calculado de la membresía más reciente
-  getLatestMembership(clientId: string): (ClientMembership & { daysRemaining: number }) | null {
-    // @ts-ignore
-    const row = db.prepare(`
+  async getLatestMembership(clientId: string): Promise<(ClientMembership & { daysRemaining: number }) | null> {
+    const row = await queryOne<any>(`
       SELECT m.*, p.name as plan_name
       FROM client_memberships m
       JOIN membership_plans p ON m.plan_id = p.id
       WHERE m.client_id = ?
       ORDER BY m.end_date DESC, m.created_at DESC
       LIMIT 1
-    `).get(clientId) as any;
+    `, [clientId]);
 
     if (!row) return null;
 
@@ -146,16 +142,15 @@ export const membershipService = {
     };
   },
 
-  getClientMemberships(clientId: string): ClientMembership[] {
+  async getClientMemberships(clientId: string): Promise<ClientMembership[]> {
     const today = getTodayString();
-    // @ts-ignore
-    const list = db.prepare(`
+    const list = await query<any>(`
       SELECT m.*, p.name as plan_name
       FROM client_memberships m
       JOIN membership_plans p ON m.plan_id = p.id
       WHERE m.client_id = ?
       ORDER BY m.end_date DESC, m.created_at DESC
-    `).all(clientId) as any[];
+    `, [clientId]);
 
     return list.map((item) => {
       const diff = daysBetween(item.end_date, today);
@@ -173,7 +168,7 @@ export const membershipService = {
 
   // Registrar pago y asignar membresía
   // REGLA CLAVE DP-002: Si la membresía actual está vigente, suma días al final del vencimiento actual.
-  assignMembership(data: {
+  async assignMembership(data: {
     clientId: string;
     planId: string;
     amountPaid: number;
@@ -181,12 +176,12 @@ export const membershipService = {
     reference?: string;
     notes?: string;
     registeredBy?: string;
-  }): { membership: ClientMembership; payment: PaymentRecord } {
-    const plan = this.getPlanById(data.planId);
+  }): Promise<{ membership: ClientMembership; payment: PaymentRecord }> {
+    const plan = await this.getPlanById(data.planId);
     if (!plan) throw new Error('Plan seleccionado no existe');
 
     const today = getTodayString();
-    const currentActive = this.getLatestMembership(data.clientId);
+    const currentActive = await this.getLatestMembership(data.clientId);
 
     let startDate = today;
     let endDate = addDaysToDate(today, plan.duration_days);
@@ -200,20 +195,19 @@ export const membershipService = {
     const membershipId = crypto.randomUUID();
     const paymentId = crypto.randomUUID();
 
-    // Transacción atómica
-    db.exec('BEGIN TRANSACTION;');
-    try {
+    // Transacción atómica (membresía + pago + movimiento financiero) con ROLLBACK automático
+    await withTransaction(async (tx) => {
       // 1. Insertar Membresía
-      db.prepare(`
+      await tx.query(`
         INSERT INTO client_memberships (id, client_id, plan_id, start_date, end_date, status, price_paid)
-        VALUES (?, ?, ?, ?, ?, 'VIGENTE', ?)
-      `).run(membershipId, data.clientId, plan.id, startDate, endDate, data.amountPaid);
+        VALUES ($1, $2, $3, $4, $5, 'VIGENTE', $6)
+      `, [membershipId, data.clientId, plan.id, startDate, endDate, data.amountPaid]);
 
       // 2. Insertar Pago
-      db.prepare(`
+      await tx.query(`
         INSERT INTO payments (id, client_id, membership_id, amount, payment_method, reference, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).run(
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `, [
         paymentId,
         data.clientId,
         membershipId,
@@ -221,49 +215,40 @@ export const membershipService = {
         data.paymentMethod,
         data.reference?.trim() || null,
         data.notes?.trim() || null
-      );
+      ]);
 
       // 3. Crear Movimiento Financiero unificado (RN-006 / DP-006)
       // Categoría 'Membresías'
-      // @ts-ignore
-      const cat = db.prepare("SELECT id FROM financial_categories WHERE name = 'Membresías'").get() as any;
-      const categoryId = cat ? cat.id : null;
+      const cat = await tx.query("SELECT id FROM financial_categories WHERE name = 'Membresías'");
+      const categoryId = cat.rows[0] ? cat.rows[0].id : null;
 
-      db.prepare(`
+      await tx.query(`
         INSERT INTO financial_transactions (id, type, category_id, concept, amount, payment_id, registered_by)
-        VALUES (?, 'INGRESO', ?, ?, ?, ?, ?)
-      `).run(
+        VALUES ($1, 'INGRESO', $2, $3, $4, $5, $6)
+      `, [
         crypto.randomUUID(),
         categoryId,
         `Pago Membresía: ${plan.name}`,
         data.amountPaid,
         paymentId,
         data.registeredBy || 'Admin'
-      );
+      ]);
+    });
 
-      db.exec('COMMIT;');
-    } catch (err) {
-      db.exec('ROLLBACK;');
-      throw err;
-    }
-
-    // @ts-ignore
-    const membership = db.prepare('SELECT * FROM client_memberships WHERE id = ?').get(membershipId) as ClientMembership;
-    // @ts-ignore
-    const payment = db.prepare('SELECT * FROM payments WHERE id = ?').get(paymentId) as PaymentRecord;
+    const membership = (await queryOne<ClientMembership>('SELECT * FROM client_memberships WHERE id = ?', [membershipId]))!;
+    const payment = (await queryOne<PaymentRecord>('SELECT * FROM payments WHERE id = ?', [paymentId]))!;
 
     return { membership, payment };
   },
 
-  getClientPayments(clientId: string): PaymentRecord[] {
-    // @ts-ignore
-    return db.prepare(`
+  async getClientPayments(clientId: string): Promise<PaymentRecord[]> {
+    return query<PaymentRecord>(`
       SELECT p.*, m.start_date, m.end_date, pl.name as plan_name
       FROM payments p
       LEFT JOIN client_memberships m ON p.membership_id = m.id
       LEFT JOIN membership_plans pl ON m.plan_id = pl.id
       WHERE p.client_id = ?
       ORDER BY p.created_at DESC
-    `).all(clientId) as PaymentRecord[];
+    `, [clientId]);
   }
 };

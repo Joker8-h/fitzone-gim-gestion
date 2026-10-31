@@ -1,4 +1,4 @@
-import { db } from '../db/database.js';
+import { query, queryOne, run } from '../db/database.js';
 import { getTodayString } from './membershipService.js';
 import crypto from 'crypto';
 
@@ -31,7 +31,7 @@ export interface FinanceSummary {
 }
 
 export const financeService = {
-  getCategories(type?: 'INGRESO' | 'EGRESO'): FinancialCategory[] {
+  async getCategories(type?: 'INGRESO' | 'EGRESO'): Promise<FinancialCategory[]> {
     let sql = 'SELECT * FROM financial_categories';
     const params: any[] = [];
     if (type) {
@@ -39,28 +39,26 @@ export const financeService = {
       params.push(type);
     }
     sql += ' ORDER BY is_system DESC, name ASC';
-    // @ts-ignore
-    return db.prepare(sql).all(...params) as FinancialCategory[];
+    return query<FinancialCategory>(sql, params);
   },
 
-  createCategory(name: string, type: 'INGRESO' | 'EGRESO'): FinancialCategory {
+  async createCategory(name: string, type: 'INGRESO' | 'EGRESO'): Promise<FinancialCategory> {
     const id = crypto.randomUUID();
-    db.prepare(`
+    await run(`
       INSERT INTO financial_categories (id, name, type, is_system)
       VALUES (?, ?, ?, 0)
-    `).run(id, name.trim(), type);
-    // @ts-ignore
-    return db.prepare('SELECT * FROM financial_categories WHERE id = ?').get(id) as FinancialCategory;
+    `, [id, name.trim(), type]);
+    return (await queryOne<FinancialCategory>('SELECT * FROM financial_categories WHERE id = ?', [id]))!;
   },
 
-  createTransaction(data: {
+  async createTransaction(data: {
     type: 'INGRESO' | 'EGRESO';
     categoryId?: string;
     concept: string;
     amount: number;
     date?: string;
     registeredBy?: string;
-  }): FinancialTransaction {
+  }): Promise<FinancialTransaction> {
     if (data.amount <= 0) {
       throw new Error('El monto debe ser superior a 0');
     }
@@ -68,10 +66,10 @@ export const financeService = {
     const id = crypto.randomUUID();
     const date = data.date || getTodayString();
 
-    db.prepare(`
+    await run(`
       INSERT INTO financial_transactions (id, type, category_id, concept, amount, date, registered_by)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(
+    `, [
       id,
       data.type,
       data.categoryId || null,
@@ -79,27 +77,25 @@ export const financeService = {
       data.amount,
       date,
       data.registeredBy || 'Admin'
-    );
+    ]);
 
-    // @ts-ignore
-    return db.prepare(`
+    return (await queryOne<FinancialTransaction>(`
       SELECT t.*, c.name as category_name
       FROM financial_transactions t
       LEFT JOIN financial_categories c ON t.category_id = c.id
       WHERE t.id = ?
-    `).get(id) as FinancialTransaction;
+    `, [id]))!;
   },
 
   // Registrar egreso específico para Pago a Entrenador (RF-025)
-  recordCoachPayment(data: {
+  async recordCoachPayment(data: {
     coachName: string;
     amount: number;
     periodConcept: string;
     date?: string;
     registeredBy?: string;
-  }): FinancialTransaction {
-    // @ts-ignore
-    const coachCategory = db.prepare("SELECT id FROM financial_categories WHERE name = 'Pago a Entrenadores'").get() as any;
+  }): Promise<FinancialTransaction> {
+    const coachCategory = await queryOne<any>("SELECT id FROM financial_categories WHERE name = 'Pago a Entrenadores'");
     const categoryId = coachCategory ? coachCategory.id : null;
 
     return this.createTransaction({
@@ -113,13 +109,13 @@ export const financeService = {
   },
 
   // Listado de transacciones con filtros (RF-027)
-  listTransactions(filters?: {
+  async listTransactions(filters?: {
     startDate?: string;
     endDate?: string;
     type?: 'INGRESO' | 'EGRESO';
     categoryId?: string;
-  }): FinancialTransaction[] {
-    let query = `
+  }): Promise<FinancialTransaction[]> {
+    let sql = `
       SELECT t.*, c.name as category_name
       FROM financial_transactions t
       LEFT JOIN financial_categories c ON t.category_id = c.id
@@ -128,34 +124,33 @@ export const financeService = {
     const params: any[] = [];
 
     if (filters?.startDate) {
-      query += ' AND t.date >= ?';
+      sql += ' AND t.date >= ?';
       params.push(filters.startDate);
     }
     if (filters?.endDate) {
-      query += ' AND t.date <= ?';
+      sql += ' AND t.date <= ?';
       params.push(filters.endDate);
     }
     if (filters?.type) {
-      query += ' AND t.type = ?';
+      sql += ' AND t.type = ?';
       params.push(filters.type);
     }
     if (filters?.categoryId) {
-      query += ' AND t.category_id = ?';
+      sql += ' AND t.category_id = ?';
       params.push(filters.categoryId);
     }
 
-    query += ' ORDER BY t.date DESC, t.created_at DESC';
-    // @ts-ignore
-    return db.prepare(query).all(...params) as FinancialTransaction[];
+    sql += ' ORDER BY t.date DESC, t.created_at DESC';
+    return query<FinancialTransaction>(sql, params);
   },
 
-  deleteTransaction(id: string) {
-    db.prepare('DELETE FROM financial_transactions WHERE id = ?').run(id);
+  async deleteTransaction(id: string) {
+    await run('DELETE FROM financial_transactions WHERE id = ?', [id]);
     return { deleted: true };
   },
 
   // Resumen financiero (RF-026 / RN-007)
-  getSummary(startDate?: string, endDate?: string): FinanceSummary {
+  async getSummary(startDate?: string, endDate?: string): Promise<FinanceSummary> {
     let whereClause = 'WHERE 1=1';
     const params: any[] = [];
 
@@ -168,36 +163,33 @@ export const financeService = {
       params.push(endDate);
     }
 
-    // @ts-ignore
-    const incRow = db.prepare(`
+    const incRow = await queryOne<any>(`
       SELECT COALESCE(SUM(amount), 0) as total
       FROM financial_transactions
       ${whereClause} AND type = 'INGRESO'
-    `).get(...params) as any;
+    `, params);
 
-    // @ts-ignore
-    const expRow = db.prepare(`
+    const expRow = await queryOne<any>(`
       SELECT COALESCE(SUM(amount), 0) as total
       FROM financial_transactions
       ${whereClause} AND type = 'EGRESO'
-    `).get(...params) as any;
+    `, params);
 
-    // @ts-ignore
-    const countRow = db.prepare(`
+    const countRow = await queryOne<any>(`
       SELECT COUNT(*) as count
       FROM financial_transactions
       ${whereClause}
-    `).get(...params) as any;
+    `, params);
 
-    const totalIncomes = incRow?.total || 0;
-    const totalExpenses = expRow?.total || 0;
+    const totalIncomes = Number(incRow?.total || 0);
+    const totalExpenses = Number(expRow?.total || 0);
     const netResult = totalIncomes - totalExpenses;
 
     return {
       totalIncomes,
       totalExpenses,
       netResult,
-      transactionsCount: countRow?.count || 0,
+      transactionsCount: Number(countRow?.count || 0),
     };
   }
 };

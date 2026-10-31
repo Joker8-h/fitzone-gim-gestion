@@ -6,24 +6,25 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 export const financeRouter = Router();
 
 // GET /api/finances/categories - Listar categorías
-financeRouter.get('/categories', (req, res) => {
+financeRouter.get('/categories', async (req, res) => {
   try {
     const { type } = req.query;
-    const categories = financeService.getCategories(type as any);
+    const categories = await financeService.getCategories(type as any);
     res.json(categories);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'No se pudieron cargar las categorías.' });
+    console.error('[FINANCES] categories:', err.message);
   }
 });
 
 // POST /api/finances/categories - Crear categoría
-financeRouter.post('/categories', (req, res) => {
+financeRouter.post('/categories', async (req, res) => {
   try {
     const { name, type } = req.body;
     if (!name || !type) {
       return res.status(400).json({ error: 'Nombre y tipo son obligatorios' });
     }
-    const cat = financeService.createCategory(name, type);
+    const cat = await financeService.createCategory(name, type);
     res.status(201).json(cat);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -31,10 +32,10 @@ financeRouter.post('/categories', (req, res) => {
 });
 
 // GET /api/finances/transactions - Listar movimientos con filtros
-financeRouter.get('/transactions', (req, res) => {
+financeRouter.get('/transactions', async (req, res) => {
   try {
     const { startDate, endDate, type, categoryId } = req.query;
-    const list = financeService.listTransactions({
+    const list = await financeService.listTransactions({
       startDate: startDate as string,
       endDate: endDate as string,
       type: type as any,
@@ -42,12 +43,13 @@ financeRouter.get('/transactions', (req, res) => {
     });
     res.json(list);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'No se pudieron cargar los movimientos.' });
+    console.error('[FINANCES] transactions:', err.message);
   }
 });
 
 // POST /api/finances/transactions - Registrar movimiento manual (Ingreso o Egreso)
-financeRouter.post('/transactions', (req, res) => {
+financeRouter.post('/transactions', async (req, res) => {
   try {
     const { type, categoryId, concept, amount, date, registeredBy } = req.body;
     if (!type || !concept || amount === undefined) {
@@ -59,21 +61,21 @@ financeRouter.post('/transactions', (req, res) => {
       return res.status(400).json({ error: 'El monto debe ser un número superior a 0' });
     }
 
-    const tx = financeService.createTransaction({
+    const tx = await financeService.createTransaction({
       type,
       categoryId,
       concept,
       amount: numericAmount,
       date,
-      registeredBy: registeredBy || 'Admin',
+      registeredBy: registeredBy || req.user?.name || 'Admin',
     });
 
-    auditService.log(
+    await auditService.log(
       'RECORD_TRANSACTION',
       'FinancialTransaction',
       tx.id,
       `${type}: ${concept} por $${numericAmount}`,
-      registeredBy || 'Admin'
+      registeredBy || req.user?.name || 'Admin'
     );
 
     res.status(201).json(tx);
@@ -83,16 +85,24 @@ financeRouter.post('/transactions', (req, res) => {
 });
 
 // DELETE /api/finances/transactions/:id - Eliminar movimiento financiero (solo ADMIN)
-financeRouter.delete('/transactions/:id', requireAuth, requireRole('ADMIN'), (req, res) => {
+financeRouter.delete('/transactions/:id', requireAuth, requireRole('ADMIN'), async (req, res) => {
   try {
-    res.json(financeService.deleteTransaction(req.params.id as string));
+    const result = await financeService.deleteTransaction(req.params.id as string);
+    await auditService.log(
+      'DELETE_TRANSACTION',
+      'FinancialTransaction',
+      req.params.id as string,
+      'Movimiento financiero eliminado',
+      req.user?.name || 'Admin'
+    );
+    res.json(result);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
 });
 
 // POST /api/finances/coach-payment - Registrar pago a entrenador (RF-025)
-financeRouter.post('/coach-payment', (req, res) => {
+financeRouter.post('/coach-payment', async (req, res) => {
   try {
     const { coachName, amount, periodConcept, date, registeredBy } = req.body;
     if (!coachName || !amount || !periodConcept) {
@@ -104,20 +114,20 @@ financeRouter.post('/coach-payment', (req, res) => {
       return res.status(400).json({ error: 'El valor a pagar debe ser mayor a 0' });
     }
 
-    const tx = financeService.recordCoachPayment({
+    const tx = await financeService.recordCoachPayment({
       coachName,
       amount: numericAmount,
       periodConcept,
       date,
-      registeredBy: registeredBy || 'Admin',
+      registeredBy: registeredBy || req.user?.name || 'Admin',
     });
 
-    auditService.log(
+    await auditService.log(
       'COACH_PAYMENT',
       'FinancialTransaction',
       tx.id,
       `Pago a Entrenador ${coachName}: $${numericAmount} (${periodConcept})`,
-      registeredBy || 'Admin'
+      registeredBy || req.user?.name || 'Admin'
     );
 
     res.status(201).json(tx);
@@ -127,12 +137,13 @@ financeRouter.post('/coach-payment', (req, res) => {
 });
 
 // GET /api/finances/summary - Resumen financiero por rango de fechas
-financeRouter.get('/summary', (req, res) => {
+financeRouter.get('/summary', async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    const summary = financeService.getSummary(startDate as string, endDate as string);
+    const summary = await financeService.getSummary(startDate as string, endDate as string);
     res.json(summary);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'No se pudo calcular el resumen financiero.' });
+    console.error('[FINANCES] summary:', err.message);
   }
 });

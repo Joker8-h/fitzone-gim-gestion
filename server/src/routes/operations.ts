@@ -4,21 +4,22 @@ import { operationsService } from '../services/operationsService.js';
 export const operationsRouter = Router();
 
 // --- CLASES ---
-operationsRouter.get('/classes', (_req, res) => {
+operationsRouter.get('/classes', async (_req, res) => {
   try {
-    res.json(operationsService.listClasses());
+    res.json(await operationsService.listClasses());
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'No se pudieron cargar las clases.' });
+    console.error('[OPERATIONS] listClasses:', err.message);
   }
 });
 
-operationsRouter.post('/classes', (req, res) => {
+operationsRouter.post('/classes', async (req, res) => {
   try {
     const { name, instructorName, scheduleTime, enrolledCount, capacity, colorTheme, status } = req.body;
     if (!name || !instructorName || !scheduleTime) {
       return res.status(400).json({ error: 'Nombre, instructor y horario son obligatorios' });
     }
-    const created = operationsService.createClass({
+    const created = await operationsService.createClass({
       name,
       instructorName,
       scheduleTime,
@@ -33,40 +34,41 @@ operationsRouter.post('/classes', (req, res) => {
   }
 });
 
-operationsRouter.patch('/classes/:id/enrollment', (req, res) => {
+operationsRouter.patch('/classes/:id/enrollment', async (req, res) => {
   try {
     const delta = Number(req.body.delta) || 1;
-    const updated = operationsService.updateClassEnrollment(req.params.id, delta);
+    const updated = await operationsService.updateClassEnrollment(req.params.id, delta);
     res.json(updated);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
 });
 
-operationsRouter.delete('/classes/:id', (req, res) => {
+operationsRouter.delete('/classes/:id', async (req, res) => {
   try {
-    res.json(operationsService.deleteClass(req.params.id));
+    res.json(await operationsService.deleteClass(req.params.id));
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
 });
 
 // --- EVENTOS ---
-operationsRouter.get('/events', (_req, res) => {
+operationsRouter.get('/events', async (_req, res) => {
   try {
-    res.json(operationsService.listEvents());
+    res.json(await operationsService.listEvents());
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'No se pudieron cargar los eventos.' });
+    console.error('[OPERATIONS] listEvents:', err.message);
   }
 });
 
-operationsRouter.post('/events', (req, res) => {
+operationsRouter.post('/events', async (req, res) => {
   try {
     const { title, eventDate, dayNum, monthShort, timeRange } = req.body;
     if (!title || !dayNum || !monthShort || !timeRange) {
       return res.status(400).json({ error: 'Todos los campos del evento son obligatorios' });
     }
-    const created = operationsService.createEvent({
+    const created = await operationsService.createEvent({
       title,
       eventDate: eventDate || new Date().toISOString().split('T')[0],
       dayNum,
@@ -79,87 +81,89 @@ operationsRouter.post('/events', (req, res) => {
   }
 });
 
-operationsRouter.delete('/events/:id', (req, res) => {
+operationsRouter.delete('/events/:id', async (req, res) => {
   try {
-    res.json(operationsService.deleteEvent(req.params.id));
+    res.json(await operationsService.deleteEvent(req.params.id));
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
 });
 
 // --- EMPLEADOS ---
-operationsRouter.get('/employees', (_req, res) => {
+operationsRouter.get('/employees', async (_req, res) => {
   try {
-    res.json(operationsService.listEmployees());
+    res.json(await operationsService.listEmployees());
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'No se pudo cargar el personal.' });
+    console.error('[OPERATIONS] listEmployees:', err.message);
   }
 });
 
-operationsRouter.post('/employees', (req, res) => {
+operationsRouter.post('/employees', async (req, res) => {
   try {
     const { fullName, role, specialty, phone, salary } = req.body;
     if (!fullName || !role || !phone) {
       return res.status(400).json({ error: 'Nombre, cargo y teléfono son obligatorios' });
     }
-    const created = operationsService.createEmployee({ fullName, role, specialty, phone, salary });
+    const created = await operationsService.createEmployee({ fullName, role, specialty, phone, salary });
     res.status(201).json(created);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
 });
 
-operationsRouter.patch('/employees/:id/toggle', (req, res) => {
+operationsRouter.patch('/employees/:id/toggle', async (req, res) => {
   try {
-    res.json(operationsService.toggleEmployeeStatus(req.params.id));
+    res.json(await operationsService.toggleEmployeeStatus(req.params.id));
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
 });
 
-operationsRouter.delete('/employees/:id', (req, res) => {
+operationsRouter.delete('/employees/:id', async (req, res) => {
   try {
-    res.json(operationsService.deleteEmployee(req.params.id));
+    res.json(await operationsService.deleteEmployee(req.params.id));
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
 });
 
 // --- EQUIPOS ---
-operationsRouter.get('/equipment', (_req, res) => {
+operationsRouter.get('/equipment', async (_req, res) => {
   try {
-    res.json(operationsService.listEquipment());
+    res.json(await operationsService.listEquipment());
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'No se pudo cargar el inventario de equipos.' });
+    console.error('[OPERATIONS] listEquipment:', err.message);
   }
 });
 
-operationsRouter.post('/equipment', (req, res) => {
+operationsRouter.post('/equipment', async (req, res) => {
   try {
     const { name, category, status, lastMaintenance } = req.body;
     if (!name || !category) {
       return res.status(400).json({ error: 'Nombre y categoría del equipo son obligatorios' });
     }
-    const created = operationsService.createEquipment({ name, category, status, lastMaintenance });
+    const created = await operationsService.createEquipment({ name, category, status, lastMaintenance });
     res.status(201).json(created);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
 });
 
-operationsRouter.patch('/equipment/:id/status', (req, res) => {
+operationsRouter.patch('/equipment/:id/status', async (req, res) => {
   try {
     const { status, lastMaintenance } = req.body;
     if (!status) return res.status(400).json({ error: 'Estado requerido' });
-    res.json(operationsService.updateEquipmentStatus(req.params.id, status, lastMaintenance));
+    res.json(await operationsService.updateEquipmentStatus(req.params.id, status, lastMaintenance));
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
 });
 
-operationsRouter.delete('/equipment/:id', (req, res) => {
+operationsRouter.delete('/equipment/:id', async (req, res) => {
   try {
-    res.json(operationsService.deleteEquipment(req.params.id));
+    res.json(await operationsService.deleteEquipment(req.params.id));
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
