@@ -95,7 +95,8 @@ export const aiTrackingService = {
     if (inactivityRule && inactivityRule.is_enabled) {
       const threshold = inactivityRule.threshold_days;
       const activeMembers = await query<any>(`
-        SELECT c.id, c.full_name, c.phone, m.end_date,
+        SELECT DISTINCT ON (c.id)
+          c.id, c.full_name, c.phone, c.registration_date, m.end_date,
           (
             SELECT MAX(check_in_time) 
             FROM attendances a 
@@ -104,13 +105,15 @@ export const aiTrackingService = {
         FROM clients c
         JOIN client_memberships m ON c.id = m.client_id
         WHERE c.status = 'ACTIVO' AND m.end_date >= ?
-        GROUP BY c.id, c.full_name, c.phone, m.end_date
+        ORDER BY c.id, m.end_date DESC
       `, [today]);
 
       for (const client of activeMembers) {
         let daysInactive = 0;
         if (!client.last_attendance) {
-          daysInactive = 10; // Nunca ha asistido
+          // Nunca ha asistido: días reales desde su registro en el sistema
+          const since = String(client.registration_date || today).split(' ')[0];
+          daysInactive = daysBetween(today, since);
         } else {
           const lastDate = client.last_attendance.split(' ')[0];
           daysInactive = daysBetween(today, lastDate);
@@ -142,12 +145,13 @@ export const aiTrackingService = {
     if (expiringRule && expiringRule.is_enabled) {
       const threshold = expiringRule.threshold_days;
       const expiringMembers = await query<any>(`
-        SELECT c.id, c.full_name, c.phone, m.end_date, p.name as plan_name
+        SELECT DISTINCT ON (c.id)
+          c.id, c.full_name, c.phone, m.end_date, p.name as plan_name
         FROM client_memberships m
         JOIN clients c ON m.client_id = c.id
         JOIN membership_plans p ON m.plan_id = p.id
         WHERE c.status = 'ACTIVO' AND m.end_date >= ?
-        ORDER BY m.end_date ASC
+        ORDER BY c.id, m.end_date ASC
       `, [today]);
 
       for (const member of expiringMembers) {

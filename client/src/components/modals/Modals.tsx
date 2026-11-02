@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId, useRef } from 'react';
+import { useModalA11y } from './useModalA11y';
 import type { Client, MembershipPlan } from '../../types/api';
 import { formatCOP } from '../../utils/format';
 
@@ -41,6 +42,10 @@ export const ClientModal: React.FC<ClientModalProps> = ({ isOpen, editingClient,
     }
   }, [editingClient, isOpen]);
 
+  const titleId = useId();
+  const boxRef = useRef<HTMLDivElement>(null);
+  useModalA11y(isOpen, onClose, boxRef);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -62,8 +67,8 @@ export const ClientModal: React.FC<ClientModalProps> = ({ isOpen, editingClient,
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>
+      <div className="modal-box" ref={boxRef} role="dialog" aria-modal="true" aria-labelledby={titleId} onClick={(e) => e.stopPropagation()}>
+        <h3 id={titleId} style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>
           {editingClient ? 'Editar Miembro' : 'Registrar Nuevo Miembro'}
         </h3>
         <form onSubmit={handleSubmit}>
@@ -178,6 +183,10 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
     setReference('');
   }, [plans, isOpen]);
 
+  const titleId = useId();
+  const boxRef = useRef<HTMLDivElement>(null);
+  useModalA11y(isOpen, onClose, boxRef);
+
   if (!isOpen || !client) return null;
 
   const handlePlanChange = (newId: string) => {
@@ -205,8 +214,8 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>
+      <div className="modal-box" ref={boxRef} role="dialog" aria-modal="true" aria-labelledby={titleId} onClick={(e) => e.stopPropagation()}>
+        <h3 id={titleId} style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>
           Renovar / Asignar Membresía
         </h3>
         <p style={{ fontSize: 12.5, color: '#64748b', marginBottom: 14 }}>
@@ -352,6 +361,10 @@ export const PlanModal: React.FC<PlanModalProps> = ({ isOpen, onClose, onSave })
   const [price, setPrice] = useState(100000);
   const [description, setDescription] = useState('');
 
+  const titleId = useId();
+  const boxRef = useRef<HTMLDivElement>(null);
+  useModalA11y(isOpen, onClose, boxRef);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -363,8 +376,8 @@ export const PlanModal: React.FC<PlanModalProps> = ({ isOpen, onClose, onSave })
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>Crear Plan de Membresía</h3>
+      <div className="modal-box" ref={boxRef} role="dialog" aria-modal="true" aria-labelledby={titleId} onClick={(e) => e.stopPropagation()}>
+        <h3 id={titleId} style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>Crear Plan de Membresía</h3>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">Nombre del Plan *</label>
@@ -445,6 +458,10 @@ export const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave 
   const [capacity, setCapacity] = useState(20);
   const [colorTheme, setColorTheme] = useState('emerald');
 
+  const titleId = useId();
+  const boxRef = useRef<HTMLDivElement>(null);
+  useModalA11y(isOpen, onClose, boxRef);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -456,8 +473,8 @@ export const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave 
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>Programar Nueva Clase</h3>
+      <div className="modal-box" ref={boxRef} role="dialog" aria-modal="true" aria-labelledby={titleId} onClick={(e) => e.stopPropagation()}>
+        <h3 id={titleId} style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>Programar Nueva Clase</h3>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">Nombre de la Clase *</label>
@@ -541,6 +558,10 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSave 
   const [monthShort, setMonthShort] = useState('OCT');
   const [timeRange, setTimeRange] = useState('09:00 AM - 11:00 AM');
 
+  const titleId = useId();
+  const boxRef = useRef<HTMLDivElement>(null);
+  useModalA11y(isOpen, onClose, boxRef);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -551,8 +572,8 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSave 
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>Publicar Próximo Evento</h3>
+      <div className="modal-box" ref={boxRef} role="dialog" aria-modal="true" aria-labelledby={titleId} onClick={(e) => e.stopPropagation()}>
+        <h3 id={titleId} style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>Publicar Próximo Evento</h3>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">Título del Evento *</label>
@@ -631,6 +652,10 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, o
   const [phone, setPhone] = useState('');
   const [salary, setSalary] = useState(1750000);
 
+  const titleId = useId();
+  const boxRef = useRef<HTMLDivElement>(null);
+  useModalA11y(isOpen, onClose, boxRef);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -642,8 +667,8 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, o
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>Registrar Empleado / Entrenador</h3>
+      <div className="modal-box" ref={boxRef} role="dialog" aria-modal="true" aria-labelledby={titleId} onClick={(e) => e.stopPropagation()}>
+        <h3 id={titleId} style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>Registrar Empleado / Entrenador</h3>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">Nombre Completo *</label>
@@ -725,6 +750,10 @@ export const EquipmentModal: React.FC<EquipmentModalProps> = ({ isOpen, onClose,
   const [category, setCategory] = useState('Cardio');
   const [status, setStatus] = useState('Disponible');
 
+  const titleId = useId();
+  const boxRef = useRef<HTMLDivElement>(null);
+  useModalA11y(isOpen, onClose, boxRef);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -735,8 +764,8 @@ export const EquipmentModal: React.FC<EquipmentModalProps> = ({ isOpen, onClose,
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>Agregar Equipo al Gimnasio</h3>
+      <div className="modal-box" ref={boxRef} role="dialog" aria-modal="true" aria-labelledby={titleId} onClick={(e) => e.stopPropagation()}>
+        <h3 id={titleId} style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>Agregar Equipo al Gimnasio</h3>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">Nombre del Equipo / Máquina *</label>

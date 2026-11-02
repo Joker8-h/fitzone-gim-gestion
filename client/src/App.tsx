@@ -76,6 +76,10 @@ export const App: React.FC = () => {
   const [categories, setCategories] = useState<FinancialCategory[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
 
+  // C8: estado de carga global y banner de error con reintento
+  const [loadingData, setLoadingData] = useState(true);
+  const [dataError, setDataError] = useState<string | null>(null);
+
   // WhatsApp & IA
   const [waStatus, setWaStatus] = useState<{
     status: string;
@@ -108,6 +112,7 @@ export const App: React.FC = () => {
 
   // Carga integral de datos
   const refreshAllData = useCallback(async () => {
+    setLoadingData(true);
     try {
       const [
         m,
@@ -152,8 +157,12 @@ export const App: React.FC = () => {
       setCategories(finCats);
       setAuditLogs(audits);
       setSystemUsers(sysUsers);
+      setDataError(null);
     } catch (err: any) {
       console.error('Error refrescando datos:', err);
+      setDataError(err?.message || 'No se pudieron cargar los datos del gimnasio.');
+    } finally {
+      setLoadingData(false);
     }
   }, []);
 
@@ -290,6 +299,7 @@ export const App: React.FC = () => {
   };
 
   const handleDeleteClient = async (c: Client) => {
+    if (!window.confirm(`¿Eliminar a ${c.full_name} (CC ${c.document_id})? Se borrarán también sus membresías, pagos y asistencias. Esta acción no se puede deshacer.`)) return;
     try {
       await api.deleteClient(c.id);
       notify(`Miembro ${c.full_name} eliminado del sistema`);
@@ -382,6 +392,7 @@ export const App: React.FC = () => {
   };
 
   const handleDeletePlan = async (id: string) => {
+    if (!window.confirm('¿Eliminar este plan de membresía? Si ya tiene membresías asociadas se desactivará en su lugar. Continuar?')) return;
     try {
       await api.deletePlan(id);
       notify('Plan de membresía eliminado');
@@ -419,6 +430,7 @@ export const App: React.FC = () => {
   };
 
   const handleDeleteClass = async (id: string) => {
+    if (!window.confirm('¿Eliminar esta clase del calendario? Esta acción no se puede deshacer.')) return;
     try {
       await api.deleteClass(id);
       notify('Clase eliminada del horario');
@@ -445,6 +457,7 @@ export const App: React.FC = () => {
   };
 
   const handleDeleteEvent = async (id: string) => {
+    if (!window.confirm('¿Eliminar este evento del gimnasio? Esta acción no se puede deshacer.')) return;
     try {
       await api.deleteEvent(id);
       notify('Evento eliminado');
@@ -502,6 +515,7 @@ export const App: React.FC = () => {
   };
 
   const handleDeleteEmployee = async (id: string) => {
+    if (!window.confirm('¿Eliminar a este empleado/entrenador del sistema? Esta acción no se puede deshacer.')) return;
     try {
       await api.deleteEmployee(id);
       notify('Empleado eliminado');
@@ -535,6 +549,7 @@ export const App: React.FC = () => {
   };
 
   const handleDeleteEquipment = async (id: string) => {
+    if (!window.confirm('¿Retirar este equipo del inventario? Esta acción no se puede deshacer.')) return;
     try {
       await api.deleteEquipment(id);
       notify('Equipo retirado del inventario');
@@ -561,6 +576,7 @@ export const App: React.FC = () => {
   };
 
   const handleDeleteFinanceTx = async (id: string) => {
+    if (!window.confirm('¿Eliminar este movimiento financiero? El resumen de caja cambiará. Esta acción no se puede deshacer.')) return;
     try {
       await api.deleteFinanceTransaction(id);
       notify('Movimiento financiero eliminado');
@@ -685,6 +701,22 @@ export const App: React.FC = () => {
         />
 
         <main className="content-scroll">
+          {dataError && (
+            <div className="error-banner" role="alert">
+              <span>
+                <strong>No se pudieron cargar los datos.</strong> {dataError}
+              </span>
+              <button type="button" className="error-banner-retry" onClick={() => refreshAllData()}>
+                Reintentar
+              </button>
+            </div>
+          )}
+          {loadingData && !metrics && !dataError && (
+            <div className="global-loading" role="status" aria-live="polite">
+              <div className="global-loading-spinner" aria-hidden="true" />
+              <span>Cargando datos del gimnasio…</span>
+            </div>
+          )}
           {activeTab === 'dashboard' && (
             <DashboardView
               metrics={metrics}

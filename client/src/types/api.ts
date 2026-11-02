@@ -142,7 +142,7 @@ export interface DashboardMetrics {
   todayAttendancesCount: number;
   monthAttendancesCount: number;
   attendancePercentage: number;
-  attendanceLast7Days: Array<{ date: string; label: string; count: number }>;
+  attendanceLast30Days: Array<{ date: string; label: string; count: number }>;
   recentAttendances: AttendanceRecord[];
   recentPayments: PaymentRecord[];
   planDistribution: Array<{ name: string; count: number; percentage: number }>;

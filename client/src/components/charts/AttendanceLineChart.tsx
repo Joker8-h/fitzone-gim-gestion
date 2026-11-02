@@ -1,23 +1,25 @@
 import React from 'react';
 
 interface AttendanceLineChartProps {
-  rangeMode: '7d' | '14d';
+  rangeMode: '7d' | '14d' | '30d';
   rawDays?: Array<{ date: string; label: string; count: number }>;
 }
 
-export const AttendanceLineChart: React.FC<AttendanceLineChartProps> = ({ rawDays = [] }) => {
-  const defaultDays = [
-    { label: 'Día 1', count: 0 },
-    { label: 'Día 2', count: 0 },
-    { label: 'Día 3', count: 0 },
-    { label: 'Día 4', count: 0 },
-    { label: 'Día 5', count: 0 },
-    { label: 'Día 6', count: 0 },
-    { label: 'Hoy', count: 0 },
-  ];
+export const AttendanceLineChart: React.FC<AttendanceLineChartProps> = ({ rangeMode = '7d', rawDays = [] }) => {
+  const days = rangeMode === '30d' ? 30 : rangeMode === '14d' ? 14 : 7;
 
-  const data = rawDays.length > 0 ? rawDays : defaultDays;
+  const defaultDays = Array.from({ length: days }, (_, i) => ({
+    label: i === days - 1 ? 'Hoy' : `Día ${i + 1}`,
+    count: 0,
+  }));
+
+  // Filtrado real: mostrar solo los últimos N días de la serie (30 días que entrega el backend)
+  const source = rawDays.length > 0 ? rawDays.slice(-days) : defaultDays;
+  const data = source.length > 0 ? source : defaultDays;
   const maxVal = Math.max(10, ...data.map((d) => d.count));
+
+  // Etiquetas del eje X: una cada N puntos para que 14/30 días no se encimen
+  const labelEvery = data.length > 20 ? 5 : data.length > 8 ? 2 : 1;
 
   const w = 480;
   const h = 195;
@@ -74,11 +76,13 @@ export const AttendanceLineChart: React.FC<AttendanceLineChartProps> = ({ rawDay
           </g>
         ))}
 
-        {pts.map((p, idx) => (
-          <text key={idx} x={p.x} y={h - 6} textAnchor="middle" fontSize="10.5" fill="#64748b">
-            {p.label}
-          </text>
-        ))}
+        {pts.map((p, idx) =>
+          (idx % labelEvery === 0 || idx === pts.length - 1) ? (
+            <text key={idx} x={p.x} y={h - 6} textAnchor="middle" fontSize="10.5" fill="#64748b">
+              {p.label}
+            </text>
+          ) : null
+        )}
       </svg>
     </div>
   );

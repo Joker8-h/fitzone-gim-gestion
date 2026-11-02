@@ -66,21 +66,27 @@ export const dashboardService = {
       WHERE substring(check_in_time from 1 for 10) >= ?
     `, [startOfMonth]);
 
-    // 5. Asistencias de los últimos 7 días (reales desde base de datos)
+    // 5. Asistencias de los últimos 30 días (una sola query; el gráfico filtra 7/14/30 en cliente)
     const monthsShort = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    const attendanceLast7Days = [];
-    for (let i = 6; i >= 0; i--) {
+    const startOf30 = addDaysToDate(today, -29);
+    const attByDay = await query<any>(`
+      SELECT substring(check_in_time from 1 for 10) as date, COUNT(*) as count
+      FROM attendances
+      WHERE substring(check_in_time from 1 for 10) >= ?
+      GROUP BY 1
+      ORDER BY 1
+    `, [startOf30]);
+    const countByDate: Record<string, number> = {};
+    for (const row of attByDay) countByDate[row.date] = Number(row.count || 0);
+
+    const attendanceLast30Days = [];
+    for (let i = 29; i >= 0; i--) {
       const dStr = addDaysToDate(today, -i);
       const [, m, d] = dStr.split('-').map(Number);
-      const label = `${d} ${monthsShort[m - 1]}`;
-      const row = await queryOne<any>(`
-        SELECT COUNT(*) as count FROM attendances
-        WHERE substring(check_in_time from 1 for 10) = ?
-      `, [dStr]);
-      attendanceLast7Days.push({
+      attendanceLast30Days.push({
         date: dStr,
-        label,
-        count: Number(row?.count || 0),
+        label: `${d} ${monthsShort[m - 1]}`,
+        count: countByDate[dStr] || 0,
       });
     }
 
@@ -170,7 +176,7 @@ export const dashboardService = {
       todayAttendancesCount: todayCount,
       monthAttendancesCount: Number(monthAtt?.count || 0),
       attendancePercentage,
-      attendanceLast7Days,
+      attendanceLast30Days,
       recentAttendances,
       recentPayments,
       planDistribution,

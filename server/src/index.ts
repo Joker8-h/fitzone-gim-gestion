@@ -96,6 +96,11 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Rutas API inexistentes: 404 JSON (nunca devolver el index.html de la SPA)
+app.use('/api', (_req, res) => {
+  res.status(404).json({ error: 'Endpoint no encontrado' });
+});
+
 // SPA Fallback
 app.get('*', (req, res) => {
   res.sendFile(path.join(publicPath, 'index.html'));

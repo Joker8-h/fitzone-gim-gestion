@@ -36,7 +36,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenEventModal,
   onOpenEquipmentModal,
 }) => {
-  const [rangeMode, setRangeMode] = useState<'7d' | '14d'>('7d');
+  const [rangeMode, setRangeMode] = useState<'7d' | '14d' | '30d'>('7d');
   const [memberFilter, setMemberFilter] = useState<'ALL' | 'ACTIVO' | 'INACTIVO'>('ALL');
   const [localSearch, setLocalSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -252,12 +252,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
               </svg>
-              <span>Asistencia de los últimos 7 días</span>
+              <span>{`Asistencia — últimos ${rangeMode === '30d' ? 30 : rangeMode === '14d' ? 14 : 7} días`}</span>
             </div>
             <select
               aria-label="Rango de días de asistencia"
               value={rangeMode}
-              onChange={(e) => setRangeMode(e.target.value as '7d' | '14d')}
+              onChange={(e) => setRangeMode(e.target.value as '7d' | '14d' | '30d')}
               style={{
                 border: '1px solid #e2e8f0',
                 borderRadius: 8,
@@ -270,9 +270,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             >
               <option value="7d">Últimos 7 días</option>
               <option value="14d">Últimos 14 días</option>
+              <option value="30d">Últimos 30 días</option>
             </select>
           </div>
-          <AttendanceLineChart rangeMode={rangeMode} rawDays={metrics?.attendanceLast7Days} />
+          <AttendanceLineChart rangeMode={rangeMode} rawDays={metrics?.attendanceLast30Days} />
         </div>
 
         {/* Card 2: Clases de hoy */}

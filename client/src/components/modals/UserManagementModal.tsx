@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useId, useRef } from 'react';
 import type { SystemUser } from '../../types/api';
+import { useModalA11y } from './useModalA11y';
 
 interface UserManagementModalProps {
   isOpen: boolean;
@@ -22,6 +23,10 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
   const [role, setRole] = useState('RECEPCION');
   const [submitting, setSubmitting] = useState(false);
 
+  const titleId = useId();
+  const boxRef = useRef<HTMLDivElement>(null);
+  useModalA11y(isOpen, onClose, boxRef);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,8 +44,8 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-box" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>
+      <div className="modal-box" ref={boxRef} role="dialog" aria-modal="true" aria-labelledby={titleId} style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
+        <h3 id={titleId} style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>
           Usuarios y Contraseñas de Acceso al Sistema
         </h3>
         <p style={{ fontSize: 12.5, color: '#64748b', marginBottom: 14 }}>
@@ -136,7 +141,11 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
                         type="button"
                         className="action-icon-btn"
                         title="Eliminar usuario"
-                        onClick={() => onDeleteUser(u.id)}
+                        onClick={() => {
+                          if (window.confirm(`¿Eliminar el usuario "${u.name}" (${u.email})? Esta acción no se puede deshacer.`)) {
+                            onDeleteUser(u.id);
+                          }
+                        }}
                       >
                         Eliminar
                       </button>
