@@ -2,6 +2,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { query, queryOne, run } from '../db/database.js';
 import { getTodayString, daysBetween } from './membershipService.js';
 import { baileysManager } from './baileysService.js';
+import { notFound } from '../errors.js';
+import { logger } from '../logger.js';
 import crypto from 'crypto';
 
 export interface TrackingCandidate {
@@ -23,7 +25,7 @@ export const aiTrackingService = {
 
   async updateRule(ruleType: string, data: { thresholdDays?: number; isEnabled?: boolean; messageTemplate?: string }) {
     const current = await queryOne<any>('SELECT * FROM tracking_rules WHERE rule_type = ?', [ruleType]);
-    if (!current) throw new Error('Regla no encontrada');
+    if (!current) throw notFound('Regla no encontrada');
 
     const threshold = data.thresholdDays !== undefined ? data.thresholdDays : current.threshold_days;
     const enabled = data.isEnabled !== undefined ? (data.isEnabled ? 1 : 0) : current.is_enabled;
@@ -67,7 +69,7 @@ export const aiTrackingService = {
           return text.trim();
         }
       } catch (err) {
-        console.warn('[AI] Error llamando a Gemini, usando plantilla predeterminada:', err);
+        logger.warn({ err }, '[AI] Error llamando a Gemini, usando plantilla predeterminada');
       }
     }
 
@@ -191,7 +193,7 @@ export const aiTrackingService = {
   // Enviar mensaje vía WhatsApp Baileys (o registrar simulación IA si el teléfono aún no ha escaneado QR)
   async sendCommunication(clientId: string, ruleType: string, message: string): Promise<boolean> {
     const client = await queryOne<any>('SELECT * FROM clients WHERE id = ?', [clientId]);
-    if (!client) throw new Error('Cliente no encontrado');
+    if (!client) throw notFound('Cliente no encontrado');
 
     const logId = crypto.randomUUID();
     const waStatus = baileysManager.getStatus();

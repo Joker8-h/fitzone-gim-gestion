@@ -1,4 +1,5 @@
 import { query, queryOne, run } from '../db/database.js';
+import { notFound } from '../errors.js';
 import crypto from 'crypto';
 
 export const operationsService = {
@@ -35,7 +36,7 @@ export const operationsService = {
 
   async updateClassEnrollment(id: string, delta: number) {
     const current = await queryOne<any>('SELECT * FROM gym_classes WHERE id = ?', [id]);
-    if (!current) throw new Error('Clase no encontrada');
+    if (!current) throw notFound('Clase no encontrada');
     const nextCount = Math.max(0, Math.min(current.capacity, current.enrolled_count + delta));
     await run('UPDATE gym_classes SET enrolled_count = ? WHERE id = ?', [nextCount, id]);
     return queryOne('SELECT * FROM gym_classes WHERE id = ?', [id]);
@@ -107,7 +108,7 @@ export const operationsService = {
 
   async toggleEmployeeStatus(id: string) {
     const current = await queryOne<any>('SELECT * FROM employees WHERE id = ?', [id]);
-    if (!current) throw new Error('Empleado no encontrado');
+    if (!current) throw notFound('Empleado no encontrado');
     const nextStatus = current.status === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
     await run('UPDATE employees SET status = ? WHERE id = ?', [nextStatus, id]);
     return queryOne('SELECT * FROM employees WHERE id = ?', [id]);
@@ -146,7 +147,7 @@ export const operationsService = {
 
   async updateEquipmentStatus(id: string, status: string, lastMaintenance?: string) {
     const current = await queryOne<any>('SELECT * FROM equipment WHERE id = ?', [id]);
-    if (!current) throw new Error('Equipo no encontrado');
+    if (!current) throw notFound('Equipo no encontrado');
     const maint = lastMaintenance || current.last_maintenance;
     await run('UPDATE equipment SET status = ?, last_maintenance = ? WHERE id = ?', [status, maint, id]);
     return queryOne('SELECT * FROM equipment WHERE id = ?', [id]);

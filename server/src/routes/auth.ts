@@ -1,13 +1,36 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { authService } from '../services/authService.js';
 import { rateLimiter } from '../middleware/security.js';
 import { requireAuth, requireRole, extractToken } from '../middleware/auth.js';
 import { verifyToken } from '../services/authService.js';
+import { parse } from '../middleware/validate.js';
 
 export const authRouter = Router();
 
 const isProduction = process.env.NODE_ENV === 'production';
 const cookieAttrs = `HttpOnly; Path=/; Max-Age=86400; SameSite=Lax${isProduction ? '; Secure' : ''}`;
+
+// --- Schemas Zod (D7) ---
+
+const loginSchema = z.object({
+  username: z
+    .string({ error: 'Debes ingresar tu usuario/correo y contraseña.' })
+    .trim()
+    .min(1, 'Debes ingresar tu usuario/correo y contraseña.'),
+  password: z
+    .string({ error: 'Debes ingresar tu usuario/correo y contraseña.' })
+    .min(1, 'Debes ingresar tu usuario/correo y contraseña.'),
+});
+
+const createUserSchema = z.object({
+  name: z.string({ error: 'Nombre, usuario/correo y contraseña son obligatorios.' }).trim().min(1, 'Nombre, usuario/correo y contraseña son obligatorios.'),
+  email: z.string({ error: 'Nombre, usuario/correo y contraseña son obligatorios.' }).trim().min(1, 'Nombre, usuario/correo y contraseña son obligatorios.'),
+  password: z.string({ error: 'Nombre, usuario/correo y contraseña son obligatorios.' }).min(1, 'Nombre, usuario/correo y contraseña son obligatorios.'),
+  role: z.string().trim().optional(),
+});
+
+const idParamSchema = z.object({ id: z.string().min(1) });
 
 // POST /api/auth/login - Iniciar sesión con rate limiting estricto anti-fuerza bruta
 authRouter.post(
@@ -17,23 +40,16 @@ authRouter.post(
     maxRequests: 25,
     message: 'Demasiados intentos de inicio de sesión. Espera unos minutos.',
   }),
-  (async (req, res) => {
-    try {
-      const { username, password } = req.body;
-      if (!username || !password) {
-        return res.status(400).json({ error: 'Debes ingresar tu usuario/correo y contraseña.' });
-      }
+  async (req, res) => {
+    const { username, password } = parse(loginSchema, req.body);
 
-      const { token, user } = await authService.login(String(username), String(password));
+    const { token, user } = await authService.login(username, password);
 
-      // La sesión viaja SOLO en cookie HttpOnly (nunca en el body de la respuesta)
-      res.setHeader('Set-Cookie', `fitzone_token=${encodeURIComponent(token)}; ${cookieAttrs}`);
+    // La sesión viaja SOLO en cookie HttpOnly (nunca en el body de la respuesta)
+    res.setHeader('Set-Cookie', `fitzone_token=${encodeURIComponent(token)}; ${cookieAttrs}`);
 
-      res.json({ user });
-    } catch (err: any) {
-      res.status(401).json({ error: err.message });
-    }
-  })
+    res.json({ user });
+  }
 );
 
 // POST /api/auth/logout - Cerrar sesión
@@ -57,33 +73,17 @@ authRouter.get('/me', (req, res) => {
 
 // Gestión de usuarios del sistema: solo ADMIN
 authRouter.get('/users', requireAuth, requireRole('ADMIN'), async (_req, res) => {
-  try {
-    res.json(await authService.listUsers());
-  } catch (err: any) {
-    res.status(500).json({ error: 'No se pudieron listar los usuarios.' });
-    console.error('[AUTH] listUsers:', err.message);
-  }
+  res.json(await authService.listUsers());
 });
 
 // POST /api/auth/users - Crear nuevo usuario con contraseña para ingresar al sistema
 authRouter.post('/users', requireAuth, requireRole('ADMIN'), async (req, res) => {
-  try {
-    const { name, email, password, role } = req.body;
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: 'Nombre, usuario/correo y contraseña son obligatorios.' });
-    }
-    const created = await authService.createUser({ name, email, password, role });
-    res.status(201).json(created);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
+  const data = parse(createUserSchema, req.body);
+  res.status(201).json(await authService.createUser(data));
 });
 
 // DELETE /api/auth/users/:id - Eliminar usuario
 authRouter.delete('/users/:id', requireAuth, requireRole('ADMIN'), async (req, res) => {
-  try {
-    res.json(await authService.deleteUser(req.params.id as string));
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
+  const { id } = parse(idParamSchema, req.params);
+  res.json(await authService.deleteUser(id));
 });

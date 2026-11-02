@@ -1,11 +1,12 @@
 import { initDatabase, run } from './database.js';
 import { queryOne } from './database.js';
+import { logger } from '../logger.js';
 import crypto from 'crypto';
 import { authService } from '../services/authService.js';
 
 export async function runSeed(): Promise<void> {
   await initDatabase();
-  console.log('[SEED] Inicializando sistema FITZONE en blanco (desde cero)...');
+  logger.info('[SEED] Inicializando sistema FITZONE en blanco (desde cero)...');
 
   // 1. Asegurar únicamente el usuario Administrador para poder iniciar sesión
   await authService.ensureDefaultUsers();
@@ -71,7 +72,7 @@ export async function runSeed(): Promise<void> {
     }
   }
 
-  console.log('[SEED] Sistema listo y en blanco (0 miembros, 0 pagos, 0 clases, 0 equipos).');
+  logger.info('[SEED] Sistema listo y en blanco (0 miembros, 0 pagos, 0 clases, 0 equipos).');
 }
 
 export async function clearAllDataToZero(): Promise<void> {
@@ -82,12 +83,12 @@ export async function clearAllDataToZero(): Promise<void> {
       gym_events, employees, equipment CASCADE;
   `);
   await runSeed();
-  console.log('[RESET] Base de datos limpiada completamente a cero.');
+  logger.info('[RESET] Base de datos limpiada completamente a cero.');
 }
 
 if (process.argv[1] && process.argv[1].endsWith('seed.ts')) {
   clearAllDataToZero().then(() => process.exit(0)).catch((err) => {
-    console.error('[SEED] Error:', err);
+    logger.error({ err }, '[SEED] Error');
     process.exit(1);
   });
 }

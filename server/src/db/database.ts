@@ -2,6 +2,7 @@ import { Pool, PoolClient } from 'pg';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { logger } from '../logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,7 +24,7 @@ export const pool = new Pool({
 });
 
 pool.on('error', (err) => {
-  console.error('[DB] Error inesperado en el pool PostgreSQL:', err.message);
+  logger.error({ err }, '[DB] Error inesperado en el pool PostgreSQL');
 });
 
 // Conviierte placeholders posicionales '?' de SQLite a los $1..$n de PostgreSQL.
@@ -94,7 +95,7 @@ export async function initDatabase(): Promise<void> {
   }
 
   initialized = true;
-  console.log('[DB] Esquema PostgreSQL aplicado correctamente.');
+  logger.info('[DB] Esquema PostgreSQL aplicado correctamente.');
 }
 
 export async function closeDatabase(): Promise<void> {

@@ -1,6 +1,8 @@
 import { queryOne, query, run } from '../db/database.js';
 import crypto from 'crypto';
 import { auditService } from './auditService.js';
+import { unauthorized, badRequest, conflict } from '../errors.js';
+import { logger } from '../logger.js';
 
 function getTokenSecret(): string {
   const secret = process.env.AUTH_SECRET;
@@ -11,7 +13,7 @@ function getTokenSecret(): string {
     );
   }
   // Desarrollo: secreto efímero por proceso (las sesiones se invalidan al reiniciar)
-  console.warn('[AUTH] AUTH_SECRET no definido: usando secreto efímero solo para desarrollo.');
+  logger.warn('[AUTH] AUTH_SECRET no definido: usando secreto efímero solo para desarrollo.');
   return crypto.randomBytes(32).toString('hex');
 }
 
@@ -116,16 +118,10 @@ export const authService = {
         'admin@fitzone.com',
         hashPassword(initialPassword)
       ]);
-      console.log('========================================================');
-      console.log('  USUARIO ADMINISTRADOR INICIAL CREADO');
-      console.log('  Usuario:  admin@fitzone.com');
-      console.log(`  Contraseña: ${initialPassword}`);
-      console.log('  Guárdala en un lugar seguro. No se volverá a mostrar.');
-      if (!envPassword) {
-        console.log('  Consejo: define ADMIN_INITIAL_PASSWORD en .env para');
-        console.log('  fijar una contraseña propia desde el primer arranque.');
-      }
-      console.log('========================================================');
+      logger.info(
+        { email: 'admin@fitzone.com', password: initialPassword },
+        'USUARIO ADMINISTRADOR INICIAL CREADO — guárdala en un lugar seguro, no se volverá a mostrar' + (envPassword ? '' : ' (define ADMIN_INITIAL_PASSWORD en .env para fijar tu propia contraseña)')
+      );
     } else if (!String(existing.password).startsWith('scrypt:')) {
       await run('UPDATE users SET password = ? WHERE id = ?', [
         hashPassword(existing.password),
@@ -151,7 +147,7 @@ export const authService = {
 
     if (!row || !verifyPassword(password, row.password)) {
       await auditService.log('LOGIN_FAILED', 'Auth', undefined, `Intento fallido para usuario: ${cleanId}`, cleanId);
-      throw new Error('Usuario o contraseña incorrectos. Verifica tus credenciales.');
+      throw unauthorized('Usuario o contraseña incorrectos. Verifica tus credenciales.');
     }
 
     // Si la contraseña estaba sin hash scrypt, actualizarla automáticamente
@@ -180,11 +176,11 @@ export const authService = {
   async createUser(data: { name: string; email: string; password: string; role?: string }) {
     const cleanEmail = data.email.trim().toLowerCase();
     if (data.password.length < 6) {
-      throw new Error('La contraseña debe tener al menos 6 caracteres.');
+      throw badRequest('La contraseña debe tener al menos 6 caracteres.');
     }
     const exists = await queryOne('SELECT id FROM users WHERE LOWER(email) = ?', [cleanEmail]);
     if (exists) {
-      throw new Error(`Ya existe un usuario registrado con el correo/usuario ${cleanEmail}`);
+      throw conflict(`Ya existe un usuario registrado con el correo/usuario ${cleanEmail}`);
     }
 
     const id = crypto.randomUUID();
@@ -209,7 +205,7 @@ export const authService = {
   async deleteUser(id: string) {
     const count = (await queryOne<{ c: number }>('SELECT COUNT(*) as c FROM users'))?.c || 1;
     if (count <= 1) {
-      throw new Error('No puedes eliminar el único usuario administrador del sistema.');
+      throw badRequest('No puedes eliminar el único usuario administrador del sistema.');
     }
     await run('DELETE FROM users WHERE id = ?', [id]);
     return { deleted: true };

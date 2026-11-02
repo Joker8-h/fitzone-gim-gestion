@@ -1,5 +1,6 @@
 import { query, queryOne, run } from '../db/database.js';
 import { getTodayString } from './membershipService.js';
+import { badRequest } from '../errors.js';
 import crypto from 'crypto';
 
 export interface FinancialCategory {
@@ -60,7 +61,7 @@ export const financeService = {
     registeredBy?: string;
   }): Promise<FinancialTransaction> {
     if (data.amount <= 0) {
-      throw new Error('El monto debe ser superior a 0');
+      throw badRequest('El monto debe ser superior a 0');
     }
 
     const id = crypto.randomUUID();

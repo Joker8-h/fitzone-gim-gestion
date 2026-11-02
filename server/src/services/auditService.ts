@@ -1,4 +1,5 @@
 import { query, run } from '../db/database.js';
+import { logger } from '../logger.js';
 import crypto from 'crypto';
 
 export interface AuditEntry {
@@ -21,7 +22,7 @@ export const auditService = {
         VALUES (?, ?, ?, ?, ?, ?)
       `, [id, action, entity, entityId || null, details || null, performedBy]);
     } catch (err: any) {
-      console.error('[AUDIT] Error guardando registro de auditoría:', err.message);
+      logger.error({ err }, '[AUDIT] Error guardando registro de auditoría');
     }
   },
 

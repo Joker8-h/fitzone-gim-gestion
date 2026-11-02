@@ -1,10 +1,14 @@
 import 'dotenv/config';
+import 'express-async-errors';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { initDatabase } from './db/database.js';
 import { runSeed } from './db/seed.js';
+import { logger } from './logger.js';
+import { errorHandler } from './middleware/errorHandler.js';
+import './zodConfig.js';
 
 import { securityHeaders, rateLimiter, sanitizeInputs } from './middleware/security.js';
 import { requireAuth } from './middleware/auth.js';
@@ -106,21 +110,24 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(publicPath, 'index.html'));
 });
 
+// Middleware central de errores: SIEMPRE el último (D6)
+app.use(errorHandler);
+
 // Arranque asíncrono: esquema + seed antes de aceptar tráfico
 async function bootstrap(): Promise<void> {
   await initDatabase();
   await runSeed();
 
   app.listen(Number(PORT), '0.0.0.0', () => {
-    console.log(`\n======================================================`);
-    console.log(`  FITZONE — Servidor Seguro y Endurecido (Fase 2)`);
-    console.log(`  Base de datos: PostgreSQL`);
-    console.log(`  Acceso Web: http://localhost:${PORT}`);
-    console.log(`======================================================\n`);
+    logger.info(
+      { port: PORT, db: 'PostgreSQL' },
+      'FITZONE — Servidor Seguro y Endurecido (Fase 2) listo'
+    );
+    logger.info(`Acceso Web: http://localhost:${PORT}`);
   });
 }
 
 bootstrap().catch((err) => {
-  console.error('[BOOT] Error fatal al iniciar el servidor:', err);
+  logger.error({ err }, '[BOOT] Error fatal al iniciar el servidor');
   process.exit(1);
 });

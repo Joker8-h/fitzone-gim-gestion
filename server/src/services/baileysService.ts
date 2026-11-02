@@ -6,6 +6,8 @@ import makeWASocket, {
 } from '@whiskeysockets/baileys';
 import QRCode from 'qrcode';
 import path from 'path';
+import { logger } from '../logger.js';
+import { badRequest } from '../errors.js';
 import fs from 'fs';
 import pino from 'pino';
 
@@ -63,16 +65,16 @@ class BaileysManager {
           this.status = 'SCAN_QR';
           try {
             this.qrCodeDataUrl = await QRCode.toDataURL(qr);
-            console.log('[WHATSAPP] Nuevo código QR generado para escaneo.');
+            logger.info('[WHATSAPP] Nuevo código QR generado para escaneo.');
           } catch (err) {
-            console.error('[WHATSAPP] Error generando data URL del QR:', err);
+            logger.error({ err }, '[WHATSAPP] Error generando data URL del QR');
           }
         }
 
         if (connection === 'close') {
           const shouldReconnect =
             (lastDisconnect?.error as any)?.output?.statusCode !== DisconnectReason.loggedOut;
-          console.log('[WHATSAPP] Conexión cerrada. Reconectar:', shouldReconnect);
+          logger.info({ shouldReconnect }, '[WHATSAPP] Conexión cerrada');
           this.status = 'DISCONNECTED';
           this.qrCodeDataUrl = null;
           this.userPhone = null;
@@ -84,11 +86,11 @@ class BaileysManager {
           this.status = 'CONNECTED';
           this.qrCodeDataUrl = null;
           this.userPhone = this.sock?.user?.id?.split(':')[0] || 'Conectado';
-          console.log('[WHATSAPP] Sesión vinculada exitosamente:', this.userPhone);
+          logger.info({ phone: this.userPhone }, '[WHATSAPP] Sesión vinculada exitosamente');
         }
       });
     } catch (err) {
-      console.error('[WHATSAPP] Error inicializando Baileys:', err);
+      logger.error({ err }, '[WHATSAPP] Error inicializando Baileys');
       this.status = 'DISCONNECTED';
     } finally {
       this.isInitializing = false;
@@ -110,15 +112,15 @@ class BaileysManager {
         fs.rmSync(this.authDir, { recursive: true, force: true });
         fs.mkdirSync(this.authDir, { recursive: true });
       }
-      console.log('[WHATSAPP] Sesión cerrada y credenciales eliminadas.');
+      logger.info('[WHATSAPP] Sesión cerrada y credenciales eliminadas.');
     } catch (err) {
-      console.error('[WHATSAPP] Error desconectando:', err);
+      logger.error({ err }, '[WHATSAPP] Error desconectando');
     }
   }
 
   public async sendMessage(rawPhone: string, text: string): Promise<boolean> {
     if (this.status !== 'CONNECTED' || !this.sock) {
-      throw new Error('WhatsApp no se encuentra conectado. Escanea el código QR primero.');
+      throw badRequest('WhatsApp no se encuentra conectado. Escanea el código QR primero.');
     }
 
     // Normalizar teléfono a formato internacional de WhatsApp (ej: Colombia +57)
@@ -130,10 +132,10 @@ class BaileysManager {
 
     try {
       await this.sock.sendMessage(jid, { text });
-      console.log(`[WHATSAPP] Mensaje enviado a ${jid}`);
+      logger.info({ jid }, '[WHATSAPP] Mensaje enviado');
       return true;
     } catch (err) {
-      console.error(`[WHATSAPP] Error enviando mensaje a ${jid}:`, err);
+      logger.error({ err, jid }, '[WHATSAPP] Error enviando mensaje');
       throw err;
     }
   }

@@ -1,170 +1,168 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { operationsService } from '../services/operationsService.js';
+import { parse } from '../middleware/validate.js';
 
 export const operationsRouter = Router();
 
+// --- Schemas Zod (D7) ---
+
+const idParamSchema = z.object({ id: z.string().min(1) });
+
+const createClassSchema = z.object({
+  name: z.string({ error: 'Nombre, instructor y horario son obligatorios' }).trim().min(1, 'Nombre, instructor y horario son obligatorios'),
+  instructorName: z.string({ error: 'Nombre, instructor y horario son obligatorios' }).trim().min(1, 'Nombre, instructor y horario son obligatorios'),
+  scheduleTime: z.string({ error: 'Nombre, instructor y horario son obligatorios' }).trim().min(1, 'Nombre, instructor y horario son obligatorios'),
+  enrolledCount: z.coerce.number().int().nonnegative().optional(),
+  capacity: z.coerce.number().int().positive().optional(),
+  colorTheme: z.string().trim().optional(),
+  status: z.string().trim().optional(),
+});
+
+const enrollmentSchema = z.object({ delta: z.coerce.number().int().optional() });
+
+const createEventSchema = z.object({
+  title: z.string({ error: 'Todos los campos del evento son obligatorios' }).trim().min(1, 'Todos los campos del evento son obligatorios'),
+  eventDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'La fecha debe tener formato AAAA-MM-DD')
+    .optional(),
+  dayNum: z
+    .string({ error: 'Todos los campos del evento son obligatorios' })
+    .trim()
+    .regex(/^\d{1,2}$/, 'El día del evento debe ser un número del 1 al 31'),
+  monthShort: z.string({ error: 'Todos los campos del evento son obligatorios' }).trim().min(1, 'Todos los campos del evento son obligatorios'),
+  timeRange: z.string({ error: 'Todos los campos del evento son obligatorios' }).trim().min(1, 'Todos los campos del evento son obligatorios'),
+});
+
+const createEmployeeSchema = z.object({
+  fullName: z.string({ error: 'Nombre, cargo y teléfono son obligatorios' }).trim().min(1, 'Nombre, cargo y teléfono son obligatorios'),
+  role: z.string({ error: 'Nombre, cargo y teléfono son obligatorios' }).trim().min(1, 'Nombre, cargo y teléfono son obligatorios'),
+  specialty: z.string().trim().optional(),
+  phone: z.string({ error: 'Nombre, cargo y teléfono son obligatorios' }).trim().min(1, 'Nombre, cargo y teléfono son obligatorios'),
+  salary: z.coerce.number().nonnegative().optional(),
+});
+
+const createEquipmentSchema = z.object({
+  name: z.string({ error: 'Nombre y categoría del equipo son obligatorios' }).trim().min(1, 'Nombre y categoría del equipo son obligatorios'),
+  category: z.string({ error: 'Nombre y categoría del equipo son obligatorios' }).trim().min(1, 'Nombre y categoría del equipo son obligatorios'),
+  status: z.string().trim().optional(),
+  lastMaintenance: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'La fecha debe tener formato AAAA-MM-DD')
+    .optional(),
+});
+
+const equipmentStatusSchema = z.object({
+  status: z.string({ error: 'Estado requerido' }).trim().min(1, 'Estado requerido'),
+  lastMaintenance: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'La fecha debe tener formato AAAA-MM-DD')
+    .optional(),
+});
+
 // --- CLASES ---
 operationsRouter.get('/classes', async (_req, res) => {
-  try {
-    res.json(await operationsService.listClasses());
-  } catch (err: any) {
-    res.status(500).json({ error: 'No se pudieron cargar las clases.' });
-    console.error('[OPERATIONS] listClasses:', err.message);
-  }
+  res.json(await operationsService.listClasses());
 });
 
 operationsRouter.post('/classes', async (req, res) => {
-  try {
-    const { name, instructorName, scheduleTime, enrolledCount, capacity, colorTheme, status } = req.body;
-    if (!name || !instructorName || !scheduleTime) {
-      return res.status(400).json({ error: 'Nombre, instructor y horario son obligatorios' });
-    }
-    const created = await operationsService.createClass({
-      name,
-      instructorName,
-      scheduleTime,
-      enrolledCount: Number(enrolledCount) || 0,
-      capacity: Number(capacity) || 20,
-      colorTheme,
-      status
-    });
-    res.status(201).json(created);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
+  const data = parse(createClassSchema, req.body);
+  const created = await operationsService.createClass({
+    name: data.name,
+    instructorName: data.instructorName,
+    scheduleTime: data.scheduleTime,
+    enrolledCount: data.enrolledCount ?? 0,
+    capacity: data.capacity ?? 20,
+    colorTheme: data.colorTheme,
+    status: data.status,
+  });
+  res.status(201).json(created);
 });
 
 operationsRouter.patch('/classes/:id/enrollment', async (req, res) => {
-  try {
-    const delta = Number(req.body.delta) || 1;
-    const updated = await operationsService.updateClassEnrollment(req.params.id, delta);
-    res.json(updated);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
+  const { id } = parse(idParamSchema, req.params);
+  const { delta } = parse(enrollmentSchema, req.body);
+  res.json(await operationsService.updateClassEnrollment(id, delta ?? 1));
 });
 
 operationsRouter.delete('/classes/:id', async (req, res) => {
-  try {
-    res.json(await operationsService.deleteClass(req.params.id));
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
+  const { id } = parse(idParamSchema, req.params);
+  res.json(await operationsService.deleteClass(id));
 });
 
 // --- EVENTOS ---
 operationsRouter.get('/events', async (_req, res) => {
-  try {
-    res.json(await operationsService.listEvents());
-  } catch (err: any) {
-    res.status(500).json({ error: 'No se pudieron cargar los eventos.' });
-    console.error('[OPERATIONS] listEvents:', err.message);
-  }
+  res.json(await operationsService.listEvents());
 });
 
 operationsRouter.post('/events', async (req, res) => {
-  try {
-    const { title, eventDate, dayNum, monthShort, timeRange } = req.body;
-    if (!title || !dayNum || !monthShort || !timeRange) {
-      return res.status(400).json({ error: 'Todos los campos del evento son obligatorios' });
-    }
-    const created = await operationsService.createEvent({
-      title,
-      eventDate: eventDate || new Date().toISOString().split('T')[0],
-      dayNum,
-      monthShort,
-      timeRange
-    });
-    res.status(201).json(created);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
+  const data = parse(createEventSchema, req.body);
+  const created = await operationsService.createEvent({
+    title: data.title,
+    eventDate: data.eventDate || new Date().toISOString().split('T')[0],
+    dayNum: data.dayNum,
+    monthShort: data.monthShort,
+    timeRange: data.timeRange,
+  });
+  res.status(201).json(created);
 });
 
 operationsRouter.delete('/events/:id', async (req, res) => {
-  try {
-    res.json(await operationsService.deleteEvent(req.params.id));
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
+  const { id } = parse(idParamSchema, req.params);
+  res.json(await operationsService.deleteEvent(id));
 });
 
 // --- EMPLEADOS ---
 operationsRouter.get('/employees', async (_req, res) => {
-  try {
-    res.json(await operationsService.listEmployees());
-  } catch (err: any) {
-    res.status(500).json({ error: 'No se pudo cargar el personal.' });
-    console.error('[OPERATIONS] listEmployees:', err.message);
-  }
+  res.json(await operationsService.listEmployees());
 });
 
 operationsRouter.post('/employees', async (req, res) => {
-  try {
-    const { fullName, role, specialty, phone, salary } = req.body;
-    if (!fullName || !role || !phone) {
-      return res.status(400).json({ error: 'Nombre, cargo y teléfono son obligatorios' });
-    }
-    const created = await operationsService.createEmployee({ fullName, role, specialty, phone, salary });
-    res.status(201).json(created);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
+  const data = parse(createEmployeeSchema, req.body);
+  const created = await operationsService.createEmployee({
+    fullName: data.fullName,
+    role: data.role,
+    specialty: data.specialty,
+    phone: data.phone,
+    salary: data.salary,
+  });
+  res.status(201).json(created);
 });
 
 operationsRouter.patch('/employees/:id/toggle', async (req, res) => {
-  try {
-    res.json(await operationsService.toggleEmployeeStatus(req.params.id));
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
+  const { id } = parse(idParamSchema, req.params);
+  res.json(await operationsService.toggleEmployeeStatus(id));
 });
 
 operationsRouter.delete('/employees/:id', async (req, res) => {
-  try {
-    res.json(await operationsService.deleteEmployee(req.params.id));
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
+  const { id } = parse(idParamSchema, req.params);
+  res.json(await operationsService.deleteEmployee(id));
 });
 
 // --- EQUIPOS ---
 operationsRouter.get('/equipment', async (_req, res) => {
-  try {
-    res.json(await operationsService.listEquipment());
-  } catch (err: any) {
-    res.status(500).json({ error: 'No se pudo cargar el inventario de equipos.' });
-    console.error('[OPERATIONS] listEquipment:', err.message);
-  }
+  res.json(await operationsService.listEquipment());
 });
 
 operationsRouter.post('/equipment', async (req, res) => {
-  try {
-    const { name, category, status, lastMaintenance } = req.body;
-    if (!name || !category) {
-      return res.status(400).json({ error: 'Nombre y categoría del equipo son obligatorios' });
-    }
-    const created = await operationsService.createEquipment({ name, category, status, lastMaintenance });
-    res.status(201).json(created);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
+  const data = parse(createEquipmentSchema, req.body);
+  const created = await operationsService.createEquipment({
+    name: data.name,
+    category: data.category,
+    status: data.status,
+    lastMaintenance: data.lastMaintenance,
+  });
+  res.status(201).json(created);
 });
 
 operationsRouter.patch('/equipment/:id/status', async (req, res) => {
-  try {
-    const { status, lastMaintenance } = req.body;
-    if (!status) return res.status(400).json({ error: 'Estado requerido' });
-    res.json(await operationsService.updateEquipmentStatus(req.params.id, status, lastMaintenance));
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
+  const { id } = parse(idParamSchema, req.params);
+  const { status, lastMaintenance } = parse(equipmentStatusSchema, req.body);
+  res.json(await operationsService.updateEquipmentStatus(id, status, lastMaintenance));
 });
 
 operationsRouter.delete('/equipment/:id', async (req, res) => {
-  try {
-    res.json(await operationsService.deleteEquipment(req.params.id));
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
+  const { id } = parse(idParamSchema, req.params);
+  res.json(await operationsService.deleteEquipment(id));
 });

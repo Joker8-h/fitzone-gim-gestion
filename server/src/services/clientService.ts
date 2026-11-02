@@ -1,5 +1,6 @@
 import { query, queryOne, run } from '../db/database.js';
 import { getTodayString } from './membershipService.js';
+import { badRequest, notFound } from '../errors.js';
 import crypto from 'crypto';
 
 export interface Client {
@@ -89,7 +90,7 @@ export const clientService = {
   async create(data: { documentId: string; fullName: string; phone: string; notes?: string }): Promise<Client> {
     const existing = await this.getByDocument(data.documentId);
     if (existing) {
-      throw new Error(`Ya existe un miembro registrado con el documento ${data.documentId} (${existing.full_name})`);
+      throw badRequest(`Ya existe un miembro registrado con el documento ${data.documentId} (${existing.full_name})`);
     }
 
     const id = crypto.randomUUID();
@@ -106,7 +107,7 @@ export const clientService = {
   async update(id: string, data: { fullName?: string; phone?: string; notes?: string; status?: string }): Promise<Client> {
     const current = await this.getById(id);
     if (!current) {
-      throw new Error('Miembro no encontrado');
+      throw notFound('Miembro no encontrado');
     }
 
     const fullName = data.fullName !== undefined ? data.fullName.trim() : current.full_name;

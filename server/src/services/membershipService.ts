@@ -1,4 +1,5 @@
 import { query, queryOne, run, withTransaction } from '../db/database.js';
+import { notFound, badRequest } from '../errors.js';
 import crypto from 'crypto';
 
 export interface MembershipPlan {
@@ -82,7 +83,7 @@ export const membershipService = {
 
   async updatePlan(id: string, data: { name?: string; durationDays?: number; price?: number; description?: string; isActive?: boolean }): Promise<MembershipPlan> {
     const current = await this.getPlanById(id);
-    if (!current) throw new Error('Plan no encontrado');
+    if (!current) throw notFound('Plan no encontrado');
 
     const name = data.name !== undefined ? data.name.trim() : current.name;
     const durationDays = data.durationDays !== undefined ? data.durationDays : current.duration_days;
@@ -178,7 +179,7 @@ export const membershipService = {
     registeredBy?: string;
   }): Promise<{ membership: ClientMembership; payment: PaymentRecord }> {
     const plan = await this.getPlanById(data.planId);
-    if (!plan) throw new Error('Plan seleccionado no existe');
+    if (!plan) throw notFound('Plan seleccionado no existe');
 
     const today = getTodayString();
     const currentActive = await this.getLatestMembership(data.clientId);
