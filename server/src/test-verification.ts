@@ -1,12 +1,31 @@
 import 'dotenv/config';
-import { initDatabase, run } from './db/database.js';
-import { runSeed } from './db/seed.js';
-import { clientService } from './services/clientService.js';
-import { membershipService, addDaysToDate } from './services/membershipService.js';
-import { attendanceService } from './services/attendanceService.js';
-import { financeService } from './services/financeService.js';
-import { dashboardService } from './services/dashboardService.js';
-import { aiTrackingService } from './services/aiTrackingService.js';
+
+/**
+ * Guard de seguridad (Fase 2 — D1): esta suite E2E CREA y BORRA datos
+ * transaccionales, así que solo puede correr contra la BD de prueba.
+ * El guard se ejecuta ANTES de cargar `db/database.ts` (imports dinámicos),
+ * que es donde se lee DATABASE_URL en ámbito de módulo.
+ */
+const dbUrl = process.env.DATABASE_URL || '';
+if (!/test/i.test(dbUrl)) {
+  console.error(
+    '\n[FALLO CRÍTICO] test-verification.ts solo corre contra la BD de prueba.\n' +
+      `  DATABASE_URL actual: "${dbUrl || '(no definida)'}"\n` +
+      '  Apunta a una BD de prueba (nombre que contenga "test"), p. ej.:\n' +
+      '  postgresql://postgres:postgres@localhost:5432/fitzone_test\n'
+  );
+  process.exit(1);
+}
+process.env.NODE_ENV = process.env.NODE_ENV || 'test';
+
+const { initDatabase, run } = await import('./db/database.js');
+const { runSeed } = await import('./db/seed.js');
+const { clientService } = await import('./services/clientService.js');
+const { membershipService, addDaysToDate } = await import('./services/membershipService.js');
+const { attendanceService } = await import('./services/attendanceService.js');
+const { financeService } = await import('./services/financeService.js');
+const { dashboardService } = await import('./services/dashboardService.js');
+const { aiTrackingService } = await import('./services/aiTrackingService.js');
 
 console.log('\n======================================================');
 console.log('INICIANDO VERIFICACION COMPLETA DE CRITERIOS FASE 1');

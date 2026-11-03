@@ -9,6 +9,7 @@ import { parse } from '../middleware/validate.js';
 export const authRouter = Router();
 
 const isProduction = process.env.NODE_ENV === 'production';
+const isTest = process.env.NODE_ENV === 'test';
 const cookieAttrs = `HttpOnly; Path=/; Max-Age=86400; SameSite=Lax${isProduction ? '; Secure' : ''}`;
 
 // --- Schemas Zod (D7) ---
@@ -37,7 +38,9 @@ authRouter.post(
   '/login',
   rateLimiter({
     windowMs: 15 * 60 * 1000,
-    maxRequests: 25,
+    // En tests se sube el límite (la suite hace muchos logins desde la misma
+    // IP); el anti-fuerza bruta real se cubre en rateLimit.test.ts
+    maxRequests: isTest ? 100000 : 25,
     message: 'Demasiados intentos de inicio de sesión. Espera unos minutos.',
   }),
   async (req, res) => {
