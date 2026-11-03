@@ -58,7 +58,7 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
               ) : (
                 employees.map((emp) => (
                   <tr key={emp.id}>
-                    <td style={{ fontWeight: 700, color: '#0f172a' }}>{emp.full_name}</td>
+                    <td style={{ fontWeight: 700, color: '#ffffff' }}>{emp.full_name}</td>
                     <td>{emp.role}</td>
                     <td>{emp.specialty || 'General'}</td>
                     <td>{emp.phone}</td>

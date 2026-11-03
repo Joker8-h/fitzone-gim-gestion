@@ -46,20 +46,22 @@ export const Topbar: React.FC<TopbarProps> = ({
       </div>
 
       <div className="topbar-actions">
-        {/* Botón directo para gestionar Usuarios y Contraseñas */}
-        <button
-          type="button"
-          className="filter-tab"
-          onClick={onOpenUserModal}
-          title="Crear o gestionar usuarios y contraseñas de acceso"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
-          <span>Usuarios</span>
-        </button>
+        {/* Botón directo para gestionar Usuarios y Contraseñas (solo ADMIN) */}
+        {currentUser.role === 'ADMIN' && (
+          <button
+            type="button"
+            className="filter-tab"
+            onClick={onOpenUserModal}
+            title="Crear o gestionar usuarios y contraseñas de acceso"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <span>Usuarios</span>
+          </button>
+        )}
 
         {/* Botón de Notificaciones con panel desplegable interactivo */}
         <div style={{ position: 'relative' }}>
@@ -81,7 +83,7 @@ export const Topbar: React.FC<TopbarProps> = ({
 
           {showNotifMenu && (
             <div className="notif-dropdown">
-              <div style={{ fontWeight: 800, fontSize: 13.5, color: '#0f172a', marginBottom: 10 }}>
+              <div style={{ fontWeight: 800, fontSize: 13.5, color: '#ffffff', marginBottom: 10 }}>
                 Alertas Operativas FITZONE
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
@@ -93,10 +95,11 @@ export const Topbar: React.FC<TopbarProps> = ({
                   style={{
                     padding: '8px 10px',
                     borderRadius: 10,
-                    background: '#fffbeb',
+                    background: 'rgba(245, 158, 11, 0.15)',
+                    border: '1px solid rgba(251, 191, 36, 0.3)',
                     cursor: 'pointer',
                     fontSize: 12,
-                    color: '#92400e',
+                    color: '#fbbf24',
                   }}
                 >
                   <strong>{expiringCount} membresía(s)</strong> próximas a vencer (3 días o menos). Clic para revisar.
@@ -109,10 +112,11 @@ export const Topbar: React.FC<TopbarProps> = ({
                   style={{
                     padding: '8px 10px',
                     borderRadius: 10,
-                    background: '#fef2f2',
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(248, 113, 113, 0.3)',
                     cursor: 'pointer',
                     fontSize: 12,
-                    color: '#991b1b',
+                    color: '#f87171',
                   }}
                 >
                   <strong>{expiredCount} membresía(s)</strong> vencidas pendientes de renovación.
@@ -125,10 +129,11 @@ export const Topbar: React.FC<TopbarProps> = ({
                   style={{
                     padding: '8px 10px',
                     borderRadius: 10,
-                    background: '#e6f4ee',
+                    background: 'rgba(34, 197, 94, 0.15)',
+                    border: '1px solid rgba(74, 222, 128, 0.3)',
                     cursor: 'pointer',
                     fontSize: 12,
-                    color: '#15803d',
+                    color: '#4ade80',
                   }}
                 >
                   <strong>Seguimiento WhatsApp IA:</strong> Automatización lista para procesar recordatorios.
@@ -164,33 +169,35 @@ export const Topbar: React.FC<TopbarProps> = ({
               </svg>
             </div>
             <div style={{ lineHeight: 1.2 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>
                 {currentUser.name || 'Administrador'}
               </div>
-              <div style={{ fontSize: 11, color: '#64748b' }}>{currentUser.role || 'Admin'}</div>
+              <div style={{ fontSize: 11, color: '#94a3b8' }}>{currentUser.role || 'Admin'}</div>
             </div>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
               <polyline points="6 9 12 15 18 9" />
             </svg>
           </div>
 
           {showAdminMenu && (
             <div className="notif-dropdown" style={{ width: 250 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 8 }}>
                 Sesión: {currentUser.email}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <button
-                  type="button"
-                  className="filter-tab"
-                  style={{ textAlign: 'left', width: '100%' }}
-                  onClick={() => {
-                    setShowAdminMenu(false);
-                    onOpenUserModal();
-                  }}
-                >
-                  Crear / Gestionar Usuarios
-                </button>
+                {currentUser.role === 'ADMIN' && (
+                  <button
+                    type="button"
+                    className="filter-tab"
+                    style={{ textAlign: 'left', width: '100%' }}
+                    onClick={() => {
+                      setShowAdminMenu(false);
+                      onOpenUserModal();
+                    }}
+                  >
+                    Crear / Gestionar Usuarios
+                  </button>
+                )}
                 <button
                   type="button"
                   className="filter-tab"
@@ -230,8 +237,9 @@ export const Topbar: React.FC<TopbarProps> = ({
                   style={{
                     textAlign: 'left',
                     width: '100%',
-                    backgroundColor: '#fee2e2',
-                    color: '#991b1b',
+                    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(248, 113, 113, 0.3)',
+                    color: '#f87171',
                     marginTop: 4,
                   }}
                   onClick={() => {

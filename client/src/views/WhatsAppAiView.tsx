@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { TrackingRule, TrackingCandidate, CommunicationLog } from '../types/api';
 
 // ============================================================================
@@ -40,6 +40,15 @@ export const WhatsAppAiView: React.FC<WhatsAppAiViewProps> = ({
 }) => {
   const [runningSweep, setRunningSweep] = useState(false);
   const [editingRules, setEditingRules] = useState<Record<string, { days: number; tpl: string }>>({});
+
+  // E1: Polling automático del estado y QR de WhatsApp mientras la vista está abierta
+  useEffect(() => {
+    const intervalMs = waStatus.status === 'SCAN_QR' ? 4000 : 8000;
+    const timer = setInterval(() => {
+      onRefreshWa();
+    }, intervalMs);
+    return () => clearInterval(timer);
+  }, [waStatus.status, onRefreshWa]);
 
   const handleRunSweep = async () => {
     setRunningSweep(true);
@@ -93,7 +102,8 @@ export const WhatsAppAiView: React.FC<WhatsAppAiViewProps> = ({
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              background: '#f8fafc',
+              background: '#121a2d',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
               borderRadius: 14,
               padding: 16,
               marginBottom: 14,
@@ -101,7 +111,7 @@ export const WhatsAppAiView: React.FC<WhatsAppAiViewProps> = ({
           >
             {waStatus.status === 'CONNECTED' ? (
               <div>
-                <div style={{ fontSize: 17, fontWeight: 800, color: '#15803d', marginBottom: 6 }}>
+                <div style={{ fontSize: 17, fontWeight: 800, color: '#4ade80', marginBottom: 6 }}>
                   Sesión de WhatsApp Vinculada
                 </div>
                 <p style={{ fontSize: 12.5, color: '#475569' }}>
@@ -172,8 +182,8 @@ export const WhatsAppAiView: React.FC<WhatsAppAiViewProps> = ({
                   style={{
                     padding: 12,
                     borderRadius: 12,
-                    border: '1px solid #e2e8f0',
-                    background: cand.reason === 'INACTIVITY' ? '#fff1f2' : '#fffbeb',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    background: cand.reason === 'INACTIVITY' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(245, 158, 11, 0.12)',
                   }}
                 >
                   <div
@@ -185,7 +195,7 @@ export const WhatsAppAiView: React.FC<WhatsAppAiViewProps> = ({
                     }}
                   >
                     <div>
-                      <strong style={{ color: '#0f172a' }}>{cand.fullName}</strong> ({cand.phone})
+                      <strong style={{ color: '#ffffff' }}>{cand.fullName}</strong> ({cand.phone})
                     </div>
                     <span className={cand.reason === 'INACTIVITY' ? 'pill-red' : 'pill-amber'}>
                       {cand.reason === 'INACTIVITY'
@@ -196,12 +206,12 @@ export const WhatsAppAiView: React.FC<WhatsAppAiViewProps> = ({
                   <div
                     style={{
                       fontSize: 12,
-                      color: '#334155',
-                      background: '#ffffff',
+                      color: '#cbd5e1',
+                      background: '#0e1628',
                       padding: '8px 10px',
                       borderRadius: 8,
                       marginBottom: 8,
-                      border: '1px solid #f1f5f9',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
                     }}
                   >
                     {cand.suggestedMessage}
@@ -237,13 +247,13 @@ export const WhatsAppAiView: React.FC<WhatsAppAiViewProps> = ({
               <div
                 key={r.id}
                 style={{
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
                   borderRadius: 12,
                   padding: 14,
-                  background: '#f8fafc',
+                  background: '#121a2d',
                 }}
               >
-                <div style={{ fontWeight: 800, marginBottom: 8, color: '#0f172a' }}>
+                <div style={{ fontWeight: 800, marginBottom: 8, color: '#ffffff' }}>
                   {r.rule_type === 'INACTIVITY'
                     ? 'Regla de Inactividad (Días sin asistir)'
                     : 'Regla de Vencimiento Próximo (Días antes)'}

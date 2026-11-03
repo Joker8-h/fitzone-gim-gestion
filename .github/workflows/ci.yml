@@ -1,0 +1,74 @@
+name: CI — FITZONE (Typecheck + Lint + Tests + Build)
+
+on:
+  push:
+    branches: [main, fase2-seguridad]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fitzone_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fitzone_test
+      DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/fitzone_test
+      AUTH_SECRET: ci-test-secret-key-minimum-16-chars-fitzone
+      ADMIN_INITIAL_PASSWORD: FitzoneTest!123
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Server Dependencies
+        working-directory: ./server
+        run: npm install --include=dev
+
+      - name: Install Client Dependencies
+        working-directory: ./client
+        run: npm install --include=dev
+
+      - name: Server Typecheck & Lint
+        working-directory: ./server
+        run: npm run typecheck && npm run lint
+
+      - name: Client Typecheck & Lint
+        working-directory: ./client
+        run: npm run typecheck && npm run lint
+
+      - name: Run Server Integration Tests (PostgreSQL)
+        working-directory: ./server
+        run: npm test
+
+      - name: Run Client Component Tests (Vitest + RTL)
+        working-directory: ./client
+        run: npm test
+
+      - name: Build Production Bundle
+        working-directory: ./client
+        run: npm run build
+
+      - name: Build Server TypeScript
+        working-directory: ./server
+        run: npm run build

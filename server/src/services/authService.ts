@@ -203,7 +203,8 @@ export const authService = {
   },
 
   async deleteUser(id: string) {
-    const count = (await queryOne<{ c: number }>('SELECT COUNT(*) as c FROM users'))?.c || 1;
+    const countRow = await queryOne<{ c: string | number }>('SELECT COUNT(*) as c FROM users');
+    const count = Number(countRow?.c || 1);
     if (count <= 1) {
       throw badRequest('No puedes eliminar el único usuario administrador del sistema.');
     }

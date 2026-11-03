@@ -38,8 +38,7 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
           </button>
           <button
             type="button"
-            className="btn-green"
-            style={{ backgroundColor: '#334155' }}
+            className="btn-secondary"
             onClick={onOpenEventModal}
           >
             + Nuevo Evento

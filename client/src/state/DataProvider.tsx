@@ -175,7 +175,7 @@ const RESOURCE_FETCHERS: { [K in DataResource]: () => Promise<ResourceValues[K]>
   transactions: api.getFinanceTransactions,
   categories: api.getFinanceCategories,
   auditLogs: api.getAuditLogs,
-  systemUsers: api.getUsers,
+  systemUsers: () => api.getUsers().catch(() => []),
   waStatus: api.getWhatsAppStatus,
   trackingRules: api.getTrackingRules,
   trackingCandidates: api.getTrackingCandidates,
@@ -219,7 +219,7 @@ async function fetchCoreData(): Promise<CoreValues> {
     api.getFinanceTransactions(),
     api.getFinanceCategories(),
     api.getAuditLogs(),
-    api.getUsers(),
+    api.getUsers().catch(() => []),
   ]);
 
   return {

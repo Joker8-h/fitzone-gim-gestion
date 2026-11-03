@@ -108,15 +108,16 @@ export const MembershipsView: React.FC<MembershipsViewProps> = ({
                 <div
                   key={p.id}
                   style={{
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
                     borderRadius: 14,
-                    padding: 15,
-                    background: '#f8fafc',
+                    padding: 16,
+                    background: 'linear-gradient(145deg, #121a2d 0%, #0d1526 100%)',
                     position: 'relative',
+                    boxShadow: '0 4px 18px rgba(0, 0, 0, 0.4)',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>{p.name}</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: '#ffffff' }}>{p.name}</div>
                     <button
                       type="button"
                       className="action-icon-btn"
@@ -126,11 +127,11 @@ export const MembershipsView: React.FC<MembershipsViewProps> = ({
                       Eliminar
                     </button>
                   </div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: '#1f8e5f', margin: '4px 0' }}>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: '#4ade80', margin: '4px 0', textShadow: '0 0 10px rgba(34, 197, 94, 0.3)' }}>
                     {formatCOP(p.price)}
                   </div>
-                  <div style={{ fontSize: 12, color: '#64748b' }}>
-                    Duración: <strong>{p.duration_days} días calendario</strong>
+                  <div style={{ fontSize: 12, color: '#cbd5e1' }}>
+                    Duración: <strong style={{ color: '#ffffff' }}>{p.duration_days} días calendario</strong>
                   </div>
                   <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 4 }}>
                     {p.description || 'Acceso completo'}

@@ -4,7 +4,7 @@ interface PlanDonutChartProps {
   distribution?: Array<{ name: string; count: number; percentage: number }>;
 }
 
-const COLORS = ['#1f8e5f', '#68b984', '#eab308', '#475569', '#0ea5e9'];
+const COLORS = ['#22c55e', '#06b6d4', '#f59e0b', '#a855f7', '#3b82f6'];
 
 export const PlanDonutChart: React.FC<PlanDonutChartProps> = ({ distribution = [] }) => {
   if (distribution.length === 0) {
@@ -20,11 +20,11 @@ export const PlanDonutChart: React.FC<PlanDonutChartProps> = ({ distribution = [
       >
         <div style={{ width: 120, height: 120, flexShrink: 0 }}>
           <svg viewBox="0 0 42 42" style={{ width: 120, height: 120 }}>
-            <circle cx="21" cy="21" r="15.9155" fill="transparent" stroke="#e2e8f0" strokeWidth="7.5" />
-            <circle cx="21" cy="21" r="10" fill="#ffffff" />
+            <circle cx="21" cy="21" r="15.9155" fill="transparent" stroke="#1e293b" strokeWidth="7.5" />
+            <circle cx="21" cy="21" r="10" fill="#0e1526" />
           </svg>
         </div>
-        <div style={{ flex: 1, fontSize: 12.5, color: '#64748b' }}>
+        <div style={{ flex: 1, fontSize: 12.5, color: '#94a3b8' }}>
           Aún no hay membresías asignadas. Crea un plan y asígnalo a un miembro para ver la distribución.
         </div>
       </div>
@@ -63,7 +63,7 @@ export const PlanDonutChart: React.FC<PlanDonutChartProps> = ({ distribution = [
               />
             );
           })}
-          <circle cx="21" cy="21" r="10" fill="#ffffff" />
+          <circle cx="21" cy="21" r="10" fill="#0e1526" />
         </svg>
       </div>
 
@@ -86,11 +86,12 @@ export const PlanDonutChart: React.FC<PlanDonutChartProps> = ({ distribution = [
                   borderRadius: '50%',
                   backgroundColor: COLORS[idx % COLORS.length],
                   display: 'inline-block',
+                  boxShadow: `0 0 6px ${COLORS[idx % COLORS.length]}88`,
                 }}
               />
-              <span style={{ color: '#334155', fontWeight: 500 }}>{s.name}</span>
+              <span style={{ color: '#cbd5e1', fontWeight: 600 }}>{s.name}</span>
             </div>
-            <span style={{ fontWeight: 700, color: '#0f172a' }}>{s.percentage}%</span>
+            <span style={{ fontWeight: 800, color: '#ffffff' }}>{s.percentage}%</span>
           </div>
         ))}
       </div>

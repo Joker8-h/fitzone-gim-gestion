@@ -86,12 +86,12 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
         {plans.length === 0 ? (
           <div
             style={{
-              background: '#fffbeb',
-              border: '1px solid #fde68a',
+              background: 'rgba(245, 158, 11, 0.12)',
+              border: '1px solid rgba(251, 191, 36, 0.3)',
               borderRadius: 12,
               padding: 16,
               marginBottom: 16,
-              color: '#92400e',
+              color: '#fbbf24',
               fontSize: 13,
             }}
           >
@@ -182,11 +182,12 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
 
             <div
               style={{
-                background: '#e6f4ee',
+                background: 'rgba(34, 197, 94, 0.12)',
+                border: '1px solid rgba(74, 222, 128, 0.25)',
                 padding: '9px 12px',
                 borderRadius: 10,
                 fontSize: 12,
-                color: '#15803d',
+                color: '#4ade80',
                 marginBottom: 14,
               }}
             >

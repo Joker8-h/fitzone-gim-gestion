@@ -259,12 +259,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               value={rangeMode}
               onChange={(e) => setRangeMode(e.target.value as '7d' | '14d' | '30d')}
               style={{
-                border: '1px solid #e2e8f0',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: 8,
                 padding: '4px 10px',
                 fontSize: 12,
-                color: '#475569',
-                background: '#f8fafc',
+                color: '#cbd5e1',
+                background: '#121a2d',
                 cursor: 'pointer',
               }}
             >
@@ -373,8 +373,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         }}
                       />
                       <div>
-                        <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0f172a' }}>{r.full_name}</div>
-                        <div style={{ fontSize: 11.5, color: '#64748b' }}>
+                        <div style={{ fontSize: 13.5, fontWeight: 700, color: '#ffffff' }}>{r.full_name}</div>
+                        <div style={{ fontSize: 11.5, color: '#94a3b8' }}>
                           Plan {(r.plan_name || 'activo').toLowerCase()}
                         </div>
                       </div>
@@ -417,11 +417,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   }}
                   style={{
                     width: '100%',
-                    background: '#f1f5f9',
-                    border: '1px solid #e2e8f0',
+                    background: '#121a2d',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
                     borderRadius: 999,
                     padding: '6px 12px 6px 30px',
                     fontSize: 12,
+                    color: '#f8fafc',
                     outline: 'none',
                   }}
                 />
@@ -513,10 +514,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                                 (e.currentTarget as HTMLImageElement).src = fallback;
                               }}
                             />
-                            <span style={{ fontWeight: 600, color: '#0f172a' }}>{c.full_name}</span>
+                            <span style={{ fontWeight: 600, color: '#ffffff' }}>{c.full_name}</span>
                           </div>
                         </td>
-                        <td style={{ color: '#475569' }}>{c.plan_name || 'Sin plan'}</td>
+                        <td style={{ color: '#94a3b8' }}>{c.plan_name || 'Sin plan'}</td>
                         <td>
                           {isAct ? (
                             <span className="pill-green">Activo</span>
@@ -633,8 +634,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       <span className="event-month">{ev.month_short}</span>
                     </div>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{ev.title}</div>
-                      <div style={{ fontSize: 11.5, color: '#64748b' }}>{ev.time_range}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>{ev.title}</div>
+                      <div style={{ fontSize: 11.5, color: '#94a3b8' }}>{ev.time_range}</div>
                     </div>
                   </div>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
@@ -680,7 +681,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       {renderEquipmentIcon(eq.name)}
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{eq.name}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>{eq.name}</div>
                         <div style={{ fontSize: 11.5, fontWeight: 600, color }}>{eq.status}</div>
                       </div>
                     </div>
@@ -707,7 +708,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <span>Ingresos mensuales</span>
             </div>
           </div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a' }}>{formatCOP(monthIncomeDisplay)}</div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: '#ffffff' }}>{formatCOP(monthIncomeDisplay)}</div>
           <div style={{ fontSize: 12, fontWeight: 600, color: '#16a34a', marginBottom: 12 }}>
             Acumulado del mes actual
           </div>
@@ -774,12 +775,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                                 (e.currentTarget as HTMLImageElement).src = fallback;
                               }}
                             />
-                            <span style={{ fontWeight: 600, color: '#0f172a' }}>{p.full_name}</span>
+                            <span style={{ fontWeight: 600, color: '#ffffff' }}>{p.full_name}</span>
                           </div>
                         </td>
-                        <td style={{ color: '#475569' }}>{p.plan_name}</td>
-                        <td style={{ fontWeight: 700, color: '#0f172a' }}>{formatCOP(p.amount)}</td>
-                        <td style={{ color: '#64748b' }}>{formatDateShort(p.created_at)}</td>
+                        <td style={{ color: '#94a3b8' }}>{p.plan_name}</td>
+                        <td style={{ fontWeight: 700, color: '#ffffff' }}>{formatCOP(p.amount)}</td>
+                        <td style={{ color: '#94a3b8' }}>{formatDateShort(p.created_at)}</td>
                       </tr>
                     );
                   })

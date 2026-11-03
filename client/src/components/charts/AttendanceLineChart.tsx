@@ -48,17 +48,20 @@ export const AttendanceLineChart: React.FC<AttendanceLineChartProps> = ({ rangeM
       <svg viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', height: '100%' }}>
         <defs>
           <linearGradient id="attGradReact" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#16a34a" stopOpacity="0.28" />
-            <stop offset="100%" stopColor="#16a34a" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="#22c55e" stopOpacity="0.32" />
+            <stop offset="100%" stopColor="#22c55e" stopOpacity="0.01" />
           </linearGradient>
+          <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodColor="#22c55e" floodOpacity="0.5" />
+          </filter>
         </defs>
 
         {ySteps.map((val, i) => {
           const y = padT + plotH - (val / maxVal) * plotH;
           return (
             <g key={i}>
-              <line x1={padL} y1={y} x2={w - padR} y2={y} stroke="#f1f5f9" strokeWidth="1" />
-              <text x={padL - 8} y={y + 4} textAnchor="end" fontSize="10.5" fill="#64748b">
+              <line x1={padL} y1={y} x2={w - padR} y2={y} stroke="#1e293b" strokeWidth="1" strokeDasharray="3 3" />
+              <text x={padL - 8} y={y + 4} textAnchor="end" fontSize="10.5" fill="#94a3b8" fontWeight="600">
                 {val}
               </text>
             </g>
@@ -66,11 +69,11 @@ export const AttendanceLineChart: React.FC<AttendanceLineChartProps> = ({ rangeM
         })}
 
         <polygon points={areaPts} fill="url(#attGradReact)" />
-        <polyline fill="none" stroke="#16a34a" strokeWidth="2.5" points={polylinePts} />
+        <polyline fill="none" stroke="#22c55e" strokeWidth="2.8" points={polylinePts} filter="url(#neonGlow)" />
 
         {pts.map((p, i) => (
           <g key={i}>
-            <circle cx={p.x} cy={p.y} r="4.2" fill="#16a34a" stroke="#ffffff" strokeWidth="2">
+            <circle cx={p.x} cy={p.y} r="4.5" fill="#22c55e" stroke="#080c14" strokeWidth="2">
               <title>{`${p.label}: ${p.v} asistencia(s)`}</title>
             </circle>
           </g>
@@ -78,7 +81,7 @@ export const AttendanceLineChart: React.FC<AttendanceLineChartProps> = ({ rangeM
 
         {pts.map((p, idx) =>
           (idx % labelEvery === 0 || idx === pts.length - 1) ? (
-            <text key={idx} x={p.x} y={h - 6} textAnchor="middle" fontSize="10.5" fill="#64748b">
+            <text key={idx} x={p.x} y={h - 6} textAnchor="middle" fontSize="10.5" fill="#94a3b8" fontWeight="600">
               {p.label}
             </text>
           ) : null

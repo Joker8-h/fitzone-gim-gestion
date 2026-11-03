@@ -122,16 +122,23 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                 borderRadius: 12,
                 backgroundColor:
                   feedback.type === 'success'
-                    ? '#dcfce7'
+                    ? 'rgba(34, 197, 94, 0.15)'
                     : feedback.type === 'blocked'
-                    ? '#fef3c7'
-                    : '#fee2e2',
+                    ? 'rgba(245, 158, 11, 0.15)'
+                    : 'rgba(239, 68, 68, 0.15)',
+                border: `1px solid ${
+                  feedback.type === 'success'
+                    ? 'rgba(74, 222, 128, 0.35)'
+                    : feedback.type === 'blocked'
+                    ? 'rgba(251, 191, 36, 0.35)'
+                    : 'rgba(248, 113, 113, 0.35)'
+                }`,
                 color:
                   feedback.type === 'success'
-                    ? '#166534'
+                    ? '#4ade80'
                     : feedback.type === 'blocked'
-                    ? '#92400e'
-                    : '#991b1b',
+                    ? '#fbbf24'
+                    : '#f87171',
               }}
             >
               <div style={{ fontWeight: 800, marginBottom: 6 }}>

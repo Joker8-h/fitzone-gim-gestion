@@ -55,14 +55,14 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
         <form
           onSubmit={handleSubmit}
           style={{
-            background: '#f8fafc',
+            background: '#121a2d',
             padding: 14,
             borderRadius: 12,
-            border: '1px solid #e2e8f0',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
             marginBottom: 16,
           }}
         >
-          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10, color: '#0f172a' }}>
+          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10, color: '#ffffff' }}>
             + Crear Nuevo Usuario de Acceso
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

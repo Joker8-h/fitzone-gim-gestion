@@ -59,7 +59,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         <div className="kpi-card">
           <div>
             <div className="kpi-label">Membresías Vigentes</div>
-            <div className="kpi-value" style={{ color: '#15803d' }}>
+            <div className="kpi-value" style={{ color: '#4ade80', textShadow: '0 0 12px rgba(34, 197, 94, 0.35)' }}>
               {metrics?.memberships?.vigente || 0}
             </div>
           </div>
@@ -67,7 +67,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         <div className="kpi-card">
           <div>
             <div className="kpi-label">Por Vencer (3 días o menos)</div>
-            <div className="kpi-value" style={{ color: '#d97706' }}>
+            <div className="kpi-value" style={{ color: '#fbbf24', textShadow: '0 0 12px rgba(251, 191, 36, 0.35)' }}>
               {metrics?.memberships?.porVencer || 0}
             </div>
           </div>
@@ -75,7 +75,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         <div className="kpi-card">
           <div>
             <div className="kpi-label">Membresías Vencidas</div>
-            <div className="kpi-value" style={{ color: '#b91c1c' }}>
+            <div className="kpi-value" style={{ color: '#f87171', textShadow: '0 0 12px rgba(248, 113, 113, 0.35)' }}>
               {metrics?.memberships?.vencida || 0}
             </div>
           </div>

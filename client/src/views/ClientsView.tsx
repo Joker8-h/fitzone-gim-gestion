@@ -122,8 +122,8 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                             }}
                           />
                           <div>
-                            <div style={{ fontWeight: 700, color: '#0f172a' }}>{c.full_name}</div>
-                            <div style={{ fontSize: 11, color: '#64748b' }}>Estado: {c.status}</div>
+                            <div style={{ fontWeight: 700, color: '#ffffff' }}>{c.full_name}</div>
+                            <div style={{ fontSize: 11, color: '#94a3b8' }}>Estado: {c.status}</div>
                           </div>
                         </div>
                       </td>

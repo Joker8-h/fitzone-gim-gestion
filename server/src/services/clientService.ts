@@ -54,7 +54,7 @@ export const clientService = {
 
     if (search && search.trim() !== '') {
       const term = `%${search.trim()}%`;
-      sql += ' AND (c.document_id LIKE ? OR c.full_name LIKE ? OR c.phone LIKE ?)';
+      sql += ' AND (c.document_id ILIKE ? OR c.full_name ILIKE ? OR c.phone ILIKE ?)';
       params.push(term, term, term);
     }
 

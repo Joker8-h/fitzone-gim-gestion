@@ -102,7 +102,8 @@ export const membershipService = {
 
   async deletePlan(id: string) {
     // Si tiene membresías asociadas, desactivar lógicamente; si no, eliminar físicamente
-    const used = (await queryOne<{ c: number }>('SELECT COUNT(*) as c FROM client_memberships WHERE plan_id = ?', [id]))?.c || 0;
+    const usedRow = await queryOne<{ c: string | number }>('SELECT COUNT(*) as c FROM client_memberships WHERE plan_id = ?', [id]);
+    const used = Number(usedRow?.c || 0);
     if (used > 0) {
       await run('UPDATE membership_plans SET is_active = 0 WHERE id = ?', [id]);
     } else {

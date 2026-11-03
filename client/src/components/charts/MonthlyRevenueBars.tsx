@@ -25,7 +25,7 @@ export const MonthlyRevenueBars: React.FC<MonthlyRevenueBarsProps> = ({ monthlyD
   return (
     <div
       style={{
-        height: 115,
+        height: 120,
         display: 'flex',
         alignItems: 'flex-end',
         justifyContent: 'space-between',
@@ -35,13 +35,15 @@ export const MonthlyRevenueBars: React.FC<MonthlyRevenueBarsProps> = ({ monthlyD
     >
       {items.map((item, idx) => {
         const isLast = idx === items.length - 1;
-        const barH = item.total > 0 ? Math.max(8, Math.round((item.total / maxTotal) * 90)) : 4;
+        const barH = item.total > 0 ? Math.max(8, Math.round((item.total / maxTotal) * 92)) : 5;
         const bg =
           item.total === 0
-            ? '#e2e8f0'
+            ? '#1e293b'
             : isLast
-            ? 'linear-gradient(180deg, #1f8e5f 0%, #2d6a4f 100%)'
-            : 'linear-gradient(180deg, #52b788 0%, #95d5b2 100%)';
+            ? 'linear-gradient(180deg, #4ade80 0%, #16a34a 100%)'
+            : 'linear-gradient(180deg, #22c55e 0%, #15803d 100%)';
+
+        const glow = item.total > 0 && isLast ? '0 0 10px rgba(34, 197, 94, 0.45)' : 'none';
 
         return (
           <div
@@ -52,7 +54,7 @@ export const MonthlyRevenueBars: React.FC<MonthlyRevenueBarsProps> = ({ monthlyD
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: 5,
+              gap: 6,
             }}
           >
             <div
@@ -61,11 +63,12 @@ export const MonthlyRevenueBars: React.FC<MonthlyRevenueBarsProps> = ({ monthlyD
                 maxWidth: 22,
                 height: barH,
                 background: bg,
+                boxShadow: glow,
                 borderRadius: '5px 5px 2px 2px',
                 transition: 'height 0.25s ease',
               }}
             />
-            <span style={{ fontSize: 10.5, color: '#64748b', fontWeight: 500 }}>{item.month}</span>
+            <span style={{ fontSize: 10.5, color: '#94a3b8', fontWeight: 600 }}>{item.month}</span>
           </div>
         );
       })}

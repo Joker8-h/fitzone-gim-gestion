@@ -63,7 +63,7 @@ export const EquipmentView: React.FC<EquipmentViewProps> = ({
 
                   return (
                     <tr key={eq.id}>
-                      <td style={{ fontWeight: 700, color: '#0f172a' }}>{eq.name}</td>
+                      <td style={{ fontWeight: 700, color: '#ffffff' }}>{eq.name}</td>
                       <td>{eq.category}</td>
                       <td>{pill}</td>
                       <td>Mant. {eq.last_maintenance}</td>

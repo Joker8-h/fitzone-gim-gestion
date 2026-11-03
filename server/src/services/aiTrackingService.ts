@@ -50,11 +50,12 @@ export const aiTrackingService = {
   }): Promise<string> {
     const apiKey = process.env.GEMINI_API_KEY;
 
-    // Si hay API key disponible, usar Gemini
+    // Si hay API key disponible, usar Gemini (modelo vigente gemini-2.0-flash por defecto)
     if (apiKey && apiKey.trim() !== '') {
       try {
         const genAI = new GoogleGenerativeAI(apiKey.trim());
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const modelName = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+        const model = genAI.getGenerativeModel({ model: modelName });
 
         let prompt = '';
         if (candidate.reason === 'INACTIVITY') {

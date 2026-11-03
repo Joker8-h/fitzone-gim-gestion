@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { initDatabase, run } from './database.js';
 import { queryOne } from './database.js';
 import { logger } from '../logger.js';
@@ -80,7 +81,7 @@ export async function clearAllDataToZero(): Promise<void> {
   await run(`
     TRUNCATE communication_logs, audit_logs, financial_transactions, payments,
       attendances, client_memberships, clients, membership_plans, gym_classes,
-      gym_events, employees, equipment CASCADE;
+      gym_events, employees, equipment, users CASCADE;
   `);
   await runSeed();
   logger.info('[RESET] Base de datos limpiada completamente a cero.');
