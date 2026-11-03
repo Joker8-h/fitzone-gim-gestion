@@ -3,22 +3,11 @@ import { api, setAuthToken } from './services/api';
 import type {
   TabId,
   Client,
-  MembershipPlan,
-  GymClass,
-  GymEvent,
   Employee,
-  EquipmentItem,
-  AttendanceRecord,
-  FinancialCategory,
-  FinancialTransaction,
-  FinanceSummary,
-  DashboardMetrics,
-  TrackingRule,
   TrackingCandidate,
-  CommunicationLog,
-  AuditLog,
   SystemUser,
 } from './types/api';
+import { useData } from './state/DataProvider';
 
 import { LoginScreen } from './components/auth/LoginScreen';
 import { UserManagementModal } from './components/modals/UserManagementModal';
@@ -56,39 +45,35 @@ export const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<SystemUser | null>(null);
   const [authChecking, setAuthChecking] = useState(true);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [systemUsers, setSystemUsers] = useState<SystemUser[]>([]);
   const [userModalOpen, setUserModalOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   const [globalSearch, setGlobalSearch] = useState('');
 
-  // Datos sincronizados con el Backend SQLite
-  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [plans, setPlans] = useState<MembershipPlan[]>([]);
-  const [classes, setClasses] = useState<GymClass[]>([]);
-  const [events, setEvents] = useState<GymEvent[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [equipment, setEquipment] = useState<EquipmentItem[]>([]);
-  const [attendances, setAttendances] = useState<AttendanceRecord[]>([]);
-  const [financeSummary, setFinanceSummary] = useState<FinanceSummary | null>(null);
-  const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
-  const [categories, setCategories] = useState<FinancialCategory[]>([]);
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-
-  // C8: estado de carga global y banner de error con reintento
-  const [loadingData, setLoadingData] = useState(true);
-  const [dataError, setDataError] = useState<string | null>(null);
-
-  // WhatsApp & IA
-  const [waStatus, setWaStatus] = useState<{
-    status: string;
-    qrDataUrl: string | null;
-    connectedPhone: string | null;
-  }>({ status: 'DISCONNECTED', qrDataUrl: null, connectedPhone: null });
-  const [trackingRules, setTrackingRules] = useState<TrackingRule[]>([]);
-  const [trackingCandidates, setTrackingCandidates] = useState<TrackingCandidate[]>([]);
-  const [waLogs, setWaLogs] = useState<CommunicationLog[]>([]);
+  // D4: datos sincronizados con el backend, centralizados en DataProvider
+  // (Context + useReducer con refetch selectivo por mutación)
+  const { state, refreshAll, refreshWhatsApp, invalidate } = useData();
+  const {
+    metrics,
+    clients,
+    plans,
+    classes,
+    events,
+    employees,
+    equipment,
+    attendances,
+    financeSummary,
+    transactions,
+    categories,
+    auditLogs,
+    systemUsers,
+    waStatus,
+    trackingRules,
+    trackingCandidates,
+    waLogs,
+    loadingData,
+    dataError,
+  } = state;
 
   // Estados de Modales
   const [clientModalOpen, setClientModalOpen] = useState(false);
@@ -110,79 +95,6 @@ export const App: React.FC = () => {
     }, 3800);
   }, []);
 
-  // Carga integral de datos
-  const refreshAllData = useCallback(async () => {
-    setLoadingData(true);
-    try {
-      const [
-        m,
-        cl,
-        pl,
-        cls,
-        evs,
-        emps,
-        eqs,
-        atts,
-        finSum,
-        finTxs,
-        finCats,
-        audits,
-        sysUsers,
-      ] = await Promise.all([
-        api.getDashboardMetrics(),
-        api.getClients(),
-        api.getPlans(),
-        api.getClasses(),
-        api.getEvents(),
-        api.getEmployees(),
-        api.getEquipment(),
-        api.getAttendances(),
-        api.getFinanceSummary(),
-        api.getFinanceTransactions(),
-        api.getFinanceCategories(),
-        api.getAuditLogs(),
-        api.getUsers(),
-      ]);
-
-      setMetrics(m);
-      setClients(cl);
-      setPlans(pl);
-      setClasses(cls);
-      setEvents(evs);
-      setEmployees(emps);
-      setEquipment(eqs);
-      setAttendances(atts);
-      setFinanceSummary(finSum);
-      setTransactions(finTxs);
-      setCategories(finCats);
-      setAuditLogs(audits);
-      setSystemUsers(sysUsers);
-      setDataError(null);
-    } catch (err: any) {
-      console.error('Error refrescando datos:', err);
-      setDataError(err?.message || 'No se pudieron cargar los datos del gimnasio.');
-    } finally {
-      setLoadingData(false);
-    }
-  }, []);
-
-  const refreshWhatsAppData = useCallback(async () => {
-    try {
-      const [st, rules, cands, logs] = await Promise.all([
-        api.getWhatsAppStatus(),
-        api.getTrackingRules(),
-        api.getTrackingCandidates(),
-        api.getWhatsAppLogs(),
-      ]);
-      setWaStatus(st);
-      setTrackingRules(rules);
-      setTrackingCandidates(cands);
-      setWaLogs(logs);
-    } catch (err) {
-      console.error('Error cargando WhatsApp IA:', err);
-    }
-  }, []);
-
   // Verificar si ya hay cookie de sesión activa al cargar la app
   useEffect(() => {
     api
@@ -200,10 +112,11 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     if (currentUser) {
-      refreshAllData();
-      refreshWhatsAppData();
+      // Carga integral inicial (login); los refetch posteriores son selectivos
+      refreshAll();
+      refreshWhatsApp();
     }
-  }, [currentUser, refreshAllData, refreshWhatsAppData]);
+  }, [currentUser, refreshAll, refreshWhatsApp]);
 
   // Handlers de Autenticación y Usuarios
   const handleLogin = async (username: string, password: string) => {
@@ -236,7 +149,7 @@ export const App: React.FC = () => {
     try {
       await api.createUser(payload);
       notify(`Usuario "${payload.email}" creado correctamente`);
-      await refreshAllData();
+      await invalidate(['systemUsers', 'auditLogs']);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -246,7 +159,7 @@ export const App: React.FC = () => {
     try {
       await api.deleteUser(id);
       notify('Usuario eliminado');
-      await refreshAllData();
+      await invalidate(['systemUsers']);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -281,7 +194,8 @@ export const App: React.FC = () => {
       }
       setClientModalOpen(false);
       setEditingClient(null);
-      await refreshAllData();
+      // Alta/edición de miembro → clients + métricas + auditoría
+      await invalidate(['clients', 'metrics', 'auditLogs']);
     } catch (err: any) {
       notify(err.message || 'Error al guardar miembro', true);
     }
@@ -292,7 +206,7 @@ export const App: React.FC = () => {
       const nextStatus = c.status === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
       await api.updateClient(c.id, { status: nextStatus });
       notify(`Estado de ${c.full_name} cambiado a ${nextStatus}`);
-      await refreshAllData();
+      await invalidate(['clients', 'metrics', 'auditLogs']);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -303,7 +217,16 @@ export const App: React.FC = () => {
     try {
       await api.deleteClient(c.id);
       notify(`Miembro ${c.full_name} eliminado del sistema`);
-      await refreshAllData();
+      // El borrado en cascada quita membresías, pagos, asistencias y logs (FK)
+      await invalidate([
+        'clients',
+        'metrics',
+        'attendances',
+        'financeSummary',
+        'transactions',
+        'auditLogs',
+        'waLogs',
+      ]);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -321,7 +244,7 @@ export const App: React.FC = () => {
       const res = await api.assignMembership(payload);
       setQuickRenewClient(null);
       notify(`Membresía activa hasta ${res.membership.end_date}. Pago registrado en Finanzas.`);
-      await refreshAllData();
+      await invalidate(['clients', 'plans', 'metrics', 'financeSummary', 'transactions', 'auditLogs']);
     } catch (err: any) {
       notify(err.message || 'Error al asignar membresía', true);
     }
@@ -340,7 +263,7 @@ export const App: React.FC = () => {
           ? `Ingreso excepcional auditado para ${client.full_name}`
           : `Entrada registrada para ${client.full_name}`
       );
-      await refreshAllData();
+      await invalidate(['attendances', 'metrics', 'clients', 'auditLogs']);
       return { ok: true, message: 'Entrada registrada' };
     } catch (err: any) {
       return {
@@ -385,7 +308,7 @@ export const App: React.FC = () => {
       await api.createPlan(data);
       setPlanModalOpen(false);
       notify(`Plan "${data.name}" creado correctamente`);
-      await refreshAllData();
+      await invalidate(['plans', 'metrics', 'auditLogs']);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -396,7 +319,7 @@ export const App: React.FC = () => {
     try {
       await api.deletePlan(id);
       notify('Plan de membresía eliminado');
-      await refreshAllData();
+      await invalidate(['plans', 'clients', 'metrics']);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -413,7 +336,7 @@ export const App: React.FC = () => {
       await api.createClass(data);
       setClassModalOpen(false);
       notify(`Clase "${data.name}" programada correctamente`);
-      await refreshAllData();
+      await invalidate(['classes', 'metrics']);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -423,7 +346,7 @@ export const App: React.FC = () => {
     try {
       const updated = await api.updateClassEnrollment(id, delta);
       notify(`Cupo de ${updated.name}: ${updated.enrolled_count}/${updated.capacity}`);
-      await refreshAllData();
+      await invalidate(['classes', 'metrics']);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -434,7 +357,7 @@ export const App: React.FC = () => {
     try {
       await api.deleteClass(id);
       notify('Clase eliminada del horario');
-      await refreshAllData();
+      await invalidate(['classes', 'metrics']);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -450,7 +373,7 @@ export const App: React.FC = () => {
       await api.createEvent(data);
       setEventModalOpen(false);
       notify(`Evento "${data.title}" publicado`);
-      await refreshAllData();
+      await invalidate(['events', 'metrics']);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -461,7 +384,7 @@ export const App: React.FC = () => {
     try {
       await api.deleteEvent(id);
       notify('Evento eliminado');
-      await refreshAllData();
+      await invalidate(['events', 'metrics']);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -478,7 +401,7 @@ export const App: React.FC = () => {
       await api.createEmployee(data);
       setEmployeeModalOpen(false);
       notify(`Empleado ${data.fullName} registrado`);
-      await refreshAllData();
+      await invalidate(['employees', 'metrics']);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -488,7 +411,7 @@ export const App: React.FC = () => {
     try {
       await api.toggleEmployeeStatus(id);
       notify('Estado del empleado actualizado');
-      await refreshAllData();
+      await invalidate(['employees', 'metrics']);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -508,7 +431,7 @@ export const App: React.FC = () => {
         amount: emp.salary || 1500000,
       });
       notify(`Pago de nómina registrado en Finanzas para ${emp.full_name}`);
-      await refreshAllData();
+      await invalidate(['transactions', 'financeSummary', 'metrics', 'categories', 'auditLogs']);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -519,7 +442,7 @@ export const App: React.FC = () => {
     try {
       await api.deleteEmployee(id);
       notify('Empleado eliminado');
-      await refreshAllData();
+      await invalidate(['employees', 'metrics']);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -530,7 +453,7 @@ export const App: React.FC = () => {
       await api.createEquipment(data);
       setEquipmentModalOpen(false);
       notify(`Equipo "${data.name}" agregado al inventario`);
-      await refreshAllData();
+      await invalidate(['equipment', 'metrics']);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -542,7 +465,7 @@ export const App: React.FC = () => {
       const next = order[(order.indexOf(currentStatus) + 1) % order.length];
       await api.updateEquipmentStatus(id, next);
       notify(`Estado de máquina cambiado a: ${next}`);
-      await refreshAllData();
+      await invalidate(['equipment', 'metrics']);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -553,7 +476,7 @@ export const App: React.FC = () => {
     try {
       await api.deleteEquipment(id);
       notify('Equipo retirado del inventario');
-      await refreshAllData();
+      await invalidate(['equipment', 'metrics']);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -569,7 +492,7 @@ export const App: React.FC = () => {
     try {
       await api.createFinanceTransaction(payload);
       notify('Movimiento financiero registrado en caja');
-      await refreshAllData();
+      await invalidate(['transactions', 'financeSummary', 'metrics', 'categories', 'auditLogs']);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -580,7 +503,7 @@ export const App: React.FC = () => {
     try {
       await api.deleteFinanceTransaction(id);
       notify('Movimiento financiero eliminado');
-      await refreshAllData();
+      await invalidate(['transactions', 'financeSummary', 'metrics', 'categories', 'auditLogs']);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -591,7 +514,7 @@ export const App: React.FC = () => {
     try {
       await api.connectWhatsApp();
       notify('Generando sesión QR de WhatsApp...');
-      setTimeout(refreshWhatsAppData, 1200);
+      setTimeout(refreshWhatsApp, 1200);
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -601,7 +524,7 @@ export const App: React.FC = () => {
     try {
       await api.disconnectWhatsApp();
       notify('Sesión de WhatsApp cerrada');
-      await refreshWhatsAppData();
+      await refreshWhatsApp();
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -611,7 +534,7 @@ export const App: React.FC = () => {
     try {
       const res = await api.runAutomatedWhatsAppSweep();
       notify(`Barrido IA completado: ${res.processedCount} mensajes procesados`);
-      await refreshWhatsAppData();
+      await refreshWhatsApp();
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -625,7 +548,7 @@ export const App: React.FC = () => {
         message: cand.suggestedMessage,
       });
       notify(`Recordatorio IA enviado a ${cand.fullName}`);
-      await refreshWhatsAppData();
+      await refreshWhatsApp();
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -638,7 +561,7 @@ export const App: React.FC = () => {
     try {
       await api.updateTrackingRule(ruleType, data);
       notify('Regla de seguimiento IA actualizada');
-      await refreshWhatsAppData();
+      await refreshWhatsApp();
     } catch (err: any) {
       notify(err.message, true);
     }
@@ -706,7 +629,7 @@ export const App: React.FC = () => {
               <span>
                 <strong>No se pudieron cargar los datos.</strong> {dataError}
               </span>
-              <button type="button" className="error-banner-retry" onClick={() => refreshAllData()}>
+              <button type="button" className="error-banner-retry" onClick={() => refreshAll()}>
                 Reintentar
               </button>
             </div>
@@ -838,7 +761,7 @@ export const App: React.FC = () => {
               rules={trackingRules}
               candidates={trackingCandidates}
               logs={waLogs}
-              onRefreshWa={refreshWhatsAppData}
+              onRefreshWa={refreshWhatsApp}
               onConnectWa={handleConnectWa}
               onDisconnectWa={handleDisconnectWa}
               onRunAutomatedSweep={handleRunAutomatedSweep}
