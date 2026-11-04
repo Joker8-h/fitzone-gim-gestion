@@ -12,7 +12,7 @@ COPY client/package*.json ./client/
 COPY server/package*.json ./server/
 
 RUN npm install --include=dev --prefix client && \
-    npm install --include=dev --prefix server
+    npm install --include=dev --omit=optional --prefix server
 
 COPY client ./client
 COPY server ./server
